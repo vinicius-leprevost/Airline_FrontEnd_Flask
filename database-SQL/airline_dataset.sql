@@ -301,21 +301,191 @@ INSERT INTO Bookings VALUES (28, 28, 3, DATE '2025-03-30', '22A', 'Confirmed');
 INSERT INTO Bookings VALUES (29, 29, 4, DATE '2025-03-30', '23B', 'Confirmed');
 INSERT INTO Bookings VALUES (30, 30, 5, DATE '2025-03-30', '24C', 'Confirmed');
 
+
+
+
+
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_passenger_id     Bookings.passenger_id%TYPE;
+    v_booking_id       Bookings.booking_id%TYPE; -- Use this for the specific ID
+    v_flight_id        Flights.flight_id%TYPE;
+    v_aircraft_id      Aircraft.aircraft_id%TYPE;
+    v_capacity         Aircraft.capacity%TYPE;
+    v_max_row          NUMBER;
+    v_seat_number      Bookings.seat_number%TYPE := NULL; -- Initialize to NULL
+    v_current_seat     Bookings.seat_number%TYPE;
+    v_seat_idx         NUMBER;
+    v_seat_taken_count NUMBER;
+    v_seat_found       BOOLEAN;
+    v_random_row       NUMBER;
+    v_random_letter_idx NUMBER;
+    v_max_attempts     CONSTANT NUMBER := 100; -- Max tries to find a random seat
+    v_attempt          NUMBER;
+
+    -- Collection to hold scheduled flight IDs
+    TYPE flight_id_list IS TABLE OF Flights.flight_id%TYPE INDEX BY PLS_INTEGER;
+    v_scheduled_flights flight_id_list;
+    v_flight_idx       PLS_INTEGER := 1; -- Index for cycling through flights
+
+    v_max_existing_booking_id NUMBER; -- For sequence reset
+
 BEGIN
-  FOR i IN 31 .. 480 LOOP
-    INSERT INTO Bookings 
-    VALUES (
-      i,                          -- booking_id
-      i,                          -- passenger_id (assumes new passengers with matching IDs)
-      MOD(i,15) + 1,              -- flight_id (cycles through 1 to 15)
-      DATE '2025-03-30',          -- fixed booking date
-      TO_CHAR(MOD(i, 30) + 1) || CHR(65 + MOD(i, 6)),  -- seat_number (e.g., "1A", "2B", etc.)
-      'Confirmed'                 -- booking status
-    );
-  END LOOP;
-  COMMIT;
+    -- **WARNING: Deleting existing bookings in the specified range!**
+    DELETE FROM Payments WHERE booking_id BETWEEN 31 AND 480; -- Delete dependent records first
+    DELETE FROM Bookings WHERE booking_id BETWEEN 31 AND 480;
+    DBMS_OUTPUT.PUT_LINE('Deleted existing bookings (if any) with IDs 31-480.');
+    COMMIT; -- Commit the delete
+
+    -- Initialize Random Generator
+    DBMS_RANDOM.INITIALIZE(val => TO_NUMBER(TO_CHAR(SYSDATE,'SSSSS')));
+
+    -- 1. Fetch all scheduled, future flight IDs once
+    SELECT flight_id
+    BULK COLLECT INTO v_scheduled_flights
+    FROM Flights
+    WHERE status = 'Scheduled'
+      AND departure_time > SYSDATE
+    ORDER BY flight_id;
+
+    IF v_scheduled_flights.COUNT = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('Error: No scheduled future flights found. Cannot create bookings.');
+        RETURN;
+    END IF;
+
+    DBMS_OUTPUT.PUT_LINE('Found ' || v_scheduled_flights.COUNT || ' scheduled future flights. Starting booking process...');
+
+    -- 2. Loop through passengers 31 to 480
+    FOR v_passenger_id IN 31 .. 480 LOOP
+
+        v_booking_id := v_passenger_id; -- ** Assign specific booking ID **
+        v_seat_found := FALSE;          -- Reset flag for each passenger
+        v_seat_number := NULL;          -- Reset seat number
+
+        -- 3. Select a flight ID, cycling through
+        v_flight_id := v_scheduled_flights(MOD(v_flight_idx - 1, v_scheduled_flights.COUNT) + 1);
+        v_flight_idx := v_flight_idx + 1;
+
+        -- 4. Get Aircraft capacity
+        BEGIN
+            SELECT a.capacity
+            INTO v_capacity
+            FROM Flights f
+            JOIN Aircraft a ON f.aircraft_id = a.aircraft_id
+            WHERE f.flight_id = v_flight_id;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                DBMS_OUTPUT.PUT_LINE('Warning: Could not find aircraft details for Flight ID ' || v_flight_id || '. Skipping Passenger/Booking ' || v_passenger_id);
+                CONTINUE; -- Skip to next passenger
+        END;
+
+        -- 5. Calculate max row number
+        IF v_capacity <= 0 THEN
+             DBMS_OUTPUT.PUT_LINE('Warning: Zero or negative capacity ('|| v_capacity ||') for aircraft on Flight ID ' || v_flight_id || '. Skipping Passenger/Booking ' || v_passenger_id);
+             CONTINUE; -- Skip if capacity is invalid
+        END IF;
+        v_max_row := CEIL(v_capacity / 6);
+
+        -- 6. Attempt to find a random, available seat
+        FOR v_attempt IN 1 .. v_max_attempts LOOP
+            -- Generate random row and letter index
+            v_random_row := TRUNC(DBMS_RANDOM.VALUE(1, v_max_row + 1));
+            v_random_letter_idx := TRUNC(DBMS_RANDOM.VALUE(0, 6)); -- 0=A, 1=B, ... 5=F
+
+            -- Calculate linear seat index (1-based) and check against capacity
+            v_seat_idx := (v_random_row - 1) * 6 + v_random_letter_idx + 1;
+
+            IF v_seat_idx <= v_capacity THEN
+                -- Construct the potential seat number string
+                v_current_seat := TO_CHAR(v_random_row) || CHR(ASCII('A') + v_random_letter_idx);
+
+                -- Check if this seat is already booked on this specific flight
+                SELECT COUNT(*)
+                INTO v_seat_taken_count
+                FROM Bookings
+                WHERE flight_id = v_flight_id
+                  AND seat_number = v_current_seat
+                  AND booking_status IN ('Confirmed', 'Pending');
+
+                -- If the seat is available
+                IF v_seat_taken_count = 0 THEN
+                    v_seat_number := v_current_seat;
+                    v_seat_found := TRUE;
+                    EXIT; -- Exit the attempt loop, seat found!
+                END IF;
+            END IF;
+            -- If capacity check failed OR seat was taken, loop continues to try again
+        END LOOP; -- End attempt loop
+
+        -- 7. Insert the booking if a seat was found
+        IF v_seat_found THEN
+            INSERT INTO Bookings (
+                booking_id, -- Use the specific ID
+                passenger_id,
+                flight_id,
+                booking_date,
+                seat_number,
+                booking_status
+            ) VALUES (
+                v_booking_id, -- ** Use v_booking_id (which equals v_passenger_id) **
+                v_passenger_id,
+                v_flight_id,
+                SYSDATE,
+                v_seat_number,
+                'Confirmed'
+            );
+         -- DBMS_OUTPUT.PUT_LINE('Booked B' || v_booking_id || '/P' || v_passenger_id || ' on F' || v_flight_id || ' Seat ' || v_seat_number);
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Warning: Could not find available seat for Booking/Passenger ' || v_booking_id || ' on Flight ID ' || v_flight_id || ' after ' || v_max_attempts || ' attempts. Flight might be full.');
+        END IF;
+
+    END LOOP; -- End passenger loop
+
+    -- 8. Commit all the successful inserts
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Booking generation process completed for IDs 31-480.');
+
+    -- 9. Reset the sequence to start after the highest used booking ID
+    SELECT MAX(booking_id) INTO v_max_existing_booking_id FROM Bookings;
+    IF v_max_existing_booking_id < 480 THEN
+        v_max_existing_booking_id := 480; -- Ensure it starts at least after our manual inserts
+    END IF;
+
+    BEGIN
+      EXECUTE IMMEDIATE 'DROP SEQUENCE Bookings_seq';
+      DBMS_OUTPUT.PUT_LINE('Dropped existing Bookings_seq sequence.');
+    EXCEPTION
+      WHEN OTHERS THEN -- Sequence might not exist if this is the first run
+        IF SQLCODE = -2289 THEN -- ORA-02289: sequence does not exist
+          DBMS_OUTPUT.PUT_LINE('Bookings_seq sequence did not exist, no need to drop.');
+        ELSE
+          RAISE; -- Reraise other errors
+        END IF;
+    END;
+
+    EXECUTE IMMEDIATE 'CREATE SEQUENCE Bookings_seq START WITH ' || (v_max_existing_booking_id + 1) || ' INCREMENT BY 1';
+    DBMS_OUTPUT.PUT_LINE('Recreated Bookings_seq sequence starting with ' || (v_max_existing_booking_id + 1));
+
+
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('An error occurred during booking generation: ' || SQLERRM || ' at line ' || $$PLSQL_LINE);
+        ROLLBACK; -- Rollback changes if an error occurs during the main loop
 END;
 /
+
+SET SERVEROUTPUT OFF;
+
+
+--BEGIN
+--  FOR i IN 1001 .. 1450 LOOP
+--    DELETE FROM Bookings WHERE booking_id = i;
+--  END LOOP;
+--  COMMIT;
+--END;
+--/
 
 
 ---------------------------------------------------------------------
