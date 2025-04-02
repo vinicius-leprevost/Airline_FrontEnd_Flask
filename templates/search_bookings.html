@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4 card-animated">
+  <h2 class="mb-3 fancy-title">Search Bookings</h2> {# Title Changed #}
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  {# New Search Form #}
+  <form method="POST" class="mb-4 border p-3 rounded">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label for="search_booking_id" class="form-label">Booking ID:</label>
+        {# Use search_criteria to repopulate #}
+        <input type="text" name="booking_id" id="search_booking_id" class="form-control" value="{{ search_criteria.get('booking_id', '') }}">
+      </div>
+      <div class="col-md-6">
+        <label for="search_passenger_id" class="form-label">Passenger Name:</label>
+        <select name="passenger_id" id="search_passenger_id" class="form-select">
+          <option value="">-- Any Passenger --</option>
+          {% for p in passengers %}
+            {# Use search_criteria to repopulate #}
+            <option value="{{ p.passenger_id }}" {% if search_criteria.get('passenger_id')|int(default=0) == p.passenger_id %}selected{% endif %}>
+                {{ p.last_name }}, {{ p.first_name }} (ID: {{ p.passenger_id }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" name="action" value="search" class="btn btn-primary w-100">Search</button>
+      </div>
+    </div>
+     <div class="form-text">Enter Booking ID OR select a Passenger Name (or both) and click Search.</div>
+  </form>
+
+
+  {# Updated Results Table #}
+  {% if bookings %}
+    <h4 class="mt-4">Search Results</h4>
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Booking ID</th>
+            {#<th>Passenger ID</th> #}
+            <th>Passenger Name</th>
+            <th>Flight ID</th>
+            <th>Flight No.</th>
+            <th>Departure</th>
+            <th>Destination</th>
+            <th>Seat No.</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {# Loop through booking dictionaries #}
+          {% for row in bookings %}
+            <tr>
+              <td>{{ row.booking_id }}</td>
+              {# <td>{{ row.passenger_id }}</td> #}
+              <td>{{ row.passenger_name }} (ID: {{ row.passenger_id }})</td> {# Display name + ID #}
+              <td>{{ row.flight_id }}</td>
+              <td>{{ row.flight_number }}</td>
+              <td>{{ row.departure_location }}</td> {# From Procedure #}
+              <td>{{ row.arrival_location }}</td> {# From Procedure #}
+              <td>{{ row.seat_number }}</td>
+              <td>{{ row.booking_status }}</td>
+              <td>
+                {% if row.booking_status != 'Cancelled' %}
+                  {# Use a separate form for cancellation #}
+                  <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                     <input type="hidden" name="action" value="cancel">
+                     <input type="hidden" name="booking_id_to_cancel" value="{{ row.booking_id }}">
+                     {# Pass back current search criteria if needed to refresh search after cancel, but redirect is simpler #}
+                     {# <input type="hidden" name="booking_id" value="{{ search_criteria.get('booking_id', '') }}"> #}
+                     {# <input type="hidden" name="passenger_id" value="{{ search_criteria.get('passenger_id', '') }}"> #}
+                    <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Cancel Booking">
+                      <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                  </form>
+                {% else %}
+                  <em>Cancelled</em>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% elif request.method == 'POST' and not error %}
+      {# Explicit message if search was done but nothing found #}
+      <div class="alert alert-info mt-4">No bookings found matching your criteria.</div>
+  {% endif %}
+
+</div>
+{% endblock %}

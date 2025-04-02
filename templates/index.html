@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid"> {# Ensure using fluid container from base.html #}
+  <h2 class="mb-4 fancy-title">Airline Dashboard</h2>
+
+  {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <!-- Stat Cards Row -->
+  <div class="row mb-4 g-3">
+    <div class="col-md col-sm-6">
+      <div class="card text-center h-100 card-animated">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-people-fill me-2 text-primary"></i>Passengers</h5>
+          <p class="card-text fs-4 fw-bold">{{ dashboard_data.passenger_count }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md col-sm-6">
+      <div class="card text-center h-100 card-animated" style="animation-delay: 0.1s;">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-airplane-fill me-2 text-success"></i>Scheduled Flights</h5>
+          <p class="card-text fs-4 fw-bold">{{ dashboard_data.flight_count }}</p>
+          <small class="text-muted">(Next 30 Days)</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md col-sm-6">
+      <div class="card text-center h-100 card-animated" style="animation-delay: 0.2s;">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-journal-check me-2 text-info"></i>Confirmed Bookings</h5>
+          <p class="card-text fs-4 fw-bold">{{ dashboard_data.booking_count }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md col-sm-6">
+      <div class="card text-center h-100 card-animated" style="animation-delay: 0.3s;">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-tools me-2 text-warning"></i>Aircraft Fleet</h5>
+          <p class="card-text fs-4 fw-bold">{{ dashboard_data.aircraft_count }}</p>
+        </div>
+      </div>
+    </div>
+     <div class="col-md col-sm-6">
+      <div class="card text-center h-100 card-animated" style="animation-delay: 0.4s;">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-person-badge-fill me-2 text-danger"></i>Crew Members</h5>
+          <p class="card-text fs-4 fw-bold">{{ dashboard_data.crew_count }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card card-animated h-100" style="animation-delay: 0.5s;">
+          <div class="card-header">Flights per Day (Next 30 Days)</div>
+          <div class="card-body" style="height: 400px;">  <!-- FIXED HEIGHT HERE -->
+            <canvas id="flightsChart"></canvas>
+          </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+         <div class="row g-4">
+              <div class="col-12">
+                   <div class="card card-animated h-100" style="animation-delay: 0.6s;">
+                     <div class="card-header">Booking Status</div>
+                     <div class="card-body d-flex justify-content-center align-items-center">
+                          <div style="max-width: 300px; width: 100%;"> {# Limit pie chart size #}
+                               <canvas id="bookingsChart" style="height:300px;"></canvas>
+                          </div>
+                     </div>
+                   </div>
+              </div>
+              <div class="col-12">
+                   <div class="card card-animated h-100" style="animation-delay: 0.7s;">
+                     <div class="card-header">Aircraft Models</div>
+                     <div class="card-body d-flex justify-content-center align-items-center">
+                          <div style="max-width: 300px; width: 100%;"> {# Limit pie chart size #}
+                              <canvas id="aircraftChart" style="height:300px;"></canvas>
+                          </div>
+                     </div>
+                   </div>
+              </div>
+         </div>
+    </div>
+  </div>
+
+</div> {# End container-fluid #}
+{% endblock %}
+
+{% block scripts %}
+{# Pass data safely from Flask to JavaScript using tojson #}
+<script>
+  const flightsChartData = {{ flights_chart_data|tojson }};
+  const bookingsChartData = {{ bookings_chart_data|tojson }};
+  const aircraftChartData = {{ aircraft_chart_data|tojson }};
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // --- Flights Per Day Chart (Line) ---
+    const ctxFlights = document.getElementById('flightsChart');
+    if (ctxFlights && flightsChartData.labels.length > 0) {
+      new Chart(ctxFlights, {
+        type: 'line',
+        data: {
+          labels: flightsChartData.labels,
+          datasets: [{
+            label: '# of Flights',
+            data: flightsChartData.data,
+            borderColor: 'rgb(0, 82, 204)', // Primary color
+            backgroundColor: 'rgba(0, 82, 204, 0.2)',
+            tension: 0.1,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+               ticks: { // Ensure only integers are shown on y-axis
+                  stepSize: 1,
+                  callback: function(value) {if (value % 1 === 0) {return value;}}
+              }
+            }
+          },
+          plugins: {
+               legend: { display: false } // Hide legend for single dataset
+          }
+        }
+      });
+    } else if(ctxFlights) {
+        ctxFlights.parentNode.innerHTML = '<p class="text-muted text-center">No upcoming flight data available.</p>';
+    }
+
+    // --- Booking Status Chart (Doughnut) ---
+    const ctxBookings = document.getElementById('bookingsChart');
+     if (ctxBookings && bookingsChartData.labels.length > 0) {
+      new Chart(ctxBookings, {
+        type: 'doughnut',
+        data: {
+          labels: bookingsChartData.labels,
+          datasets: [{
+            label: 'Booking Status',
+            data: bookingsChartData.data,
+            backgroundColor: [ // Example colors - add more if you have many statuses
+              'rgba(40, 167, 69, 0.7)',  // Success (Confirmed)
+              'rgba(220, 53, 69, 0.7)',   // Danger (Cancelled)
+              'rgba(255, 193, 7, 0.7)',   // Warning (Pending)
+              'rgba(108, 117, 125, 0.7)' // Secondary (Other?)
+            ],
+            hoverOffset: 4
+          }]
+        },
+         options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            }
+         }
+      });
+     } else if(ctxBookings) {
+        ctxBookings.parentNode.innerHTML = '<p class="text-muted text-center">No booking status data available.</p>';
+     }
+
+      // --- Aircraft Model Chart (Pie) ---
+     const ctxAircraft = document.getElementById('aircraftChart');
+     if (ctxAircraft && aircraftChartData.labels.length > 0) {
+      new Chart(ctxAircraft, {
+        type: 'pie',
+        data: {
+          labels: aircraftChartData.labels,
+          datasets: [{
+            label: 'Aircraft Models',
+            data: aircraftChartData.data,
+             // Add more colors as needed, Chart.js will cycle if necessary
+             backgroundColor: [
+                 'rgba(0, 82, 204, 0.7)',
+                 'rgba(40, 167, 69, 0.7)',
+                 'rgba(255, 193, 7, 0.7)',
+                 'rgba(23, 162, 184, 0.7)',
+                 'rgba(108, 117, 125, 0.7)',
+                 'rgba(253, 126, 20, 0.7)'
+             ],
+            hoverOffset: 4
+          }]
+        },
+         options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            }
+         }
+      });
+     } else if(ctxAircraft) {
+          ctxAircraft.parentNode.innerHTML = '<p class="text-muted text-center">No aircraft model data available.</p>';
+     }
+
+  });
+</script>
+{% endblock %}

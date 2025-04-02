@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4">
+  <h2 class="mb-3">Book Flight #{{ flight_id }}</h2>
+  <form method="POST">
+    <div class="mb-3">
+      <label for="passenger_id" class="form-label">Passenger ID:</label>
+      <input type="text" name="passenger_id" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label for="seat_number" class="form-label">Seat Number:</label>
+      <input type="text" name="seat_number" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Book Flight</button>
+  </form>
+</div>
+{% endblock %}

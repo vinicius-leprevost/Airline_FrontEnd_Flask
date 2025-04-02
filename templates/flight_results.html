@@ -1,0 +1,47 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4 card-animated">
+  <h2 class="mb-3 fancy-title">Available Flights</h2>
+  {% if flights %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Flight ID</th>
+            <th>Flight Number</th>
+            <th>Departure Time</th>
+            <th>Arrival Time</th>
+            <th>Status</th>
+            <th>Action</th> {# Keep Action column header #}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in flights %}
+            <tr>
+              <td>{{ row[0] }}</td>
+              <td>{{ row[1] }}</td>
+               {# Assuming row[2] and row[3] are datetime objects #}
+              <td>{{ row[2].strftime('%Y-%m-%d %H:%M') if row[2] else 'N/A' }}</td>
+              <td>{{ row[3].strftime('%Y-%m-%d %H:%M') if row[3] else 'N/A' }}</td>
+              <td><span class="badge bg-{{ 'success' if row[4] == 'Scheduled' else ('warning' if row[4] == 'Delayed' else 'danger') }}">{{ row[4] }}</span></td>
+              <td>
+                {# --- REPLACE old button with this one --- #}
+                <a href="{{ url_for('flight_details', flight_id=row[0]) }}" class="btn btn-info btn-sm">
+                   <i class="bi bi-info-circle-fill me-1"></i> View Details
+                </a>
+                {# --- END OF REPLACEMENT --- #}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="alert alert-info">No flights found matching your criteria.</p>
+  {% endif %}
+   <div class="mt-4">
+       <a href="{{ url_for('search_flights') }}" class="btn btn-secondary">« Back to Search Form</a>
+   </div>
+</div>
+{% endblock %}

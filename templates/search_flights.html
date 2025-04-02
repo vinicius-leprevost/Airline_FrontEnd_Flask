@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4">
+  <h2 class="mb-3">Search Flights</h2>
+  <form method="POST">
+    <div class="mb-3">
+      <label for="departure_airport" class="form-label">Departure Airport ID:</label>
+      <input type="text" name="departure_airport" class="form-control" placeholder="e.g., 1">
+    </div>
+    <div class="mb-3">
+      <label for="arrival_airport" class="form-label">Arrival Airport ID:</label>
+      <input type="text" name="arrival_airport" class="form-control" placeholder="e.g., 2">
+    </div>
+    <div class="mb-3">
+      <label for="departure_date" class="form-label">Departure Date (YYYY-MM-DD):</label>
+      <input type="text" name="departure_date" class="form-control" placeholder="e.g., 2025-04-01">
+    </div>
+    <div class="mb-3">
+      <label for="flight_number" class="form-label">Flight Number:</label>
+      <input type="text" name="flight_number" class="form-control" placeholder="e.g., AA101">
+    </div>
+    <div class="mb-3">
+      <label for="status" class="form-label">Status (Scheduled, Delayed, Cancelled):</label>
+      <input type="text" name="status" class="form-control" placeholder="e.g., Scheduled">
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+</div>
+{% endblock %}

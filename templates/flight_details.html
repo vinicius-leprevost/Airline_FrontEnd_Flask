@@ -1,0 +1,61 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4 card-animated">
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% elif flight_info %}
+    <h2 class="mb-3 fancy-title">Flight Details: {{ flight_info.flight_number }}</h2>
+
+    {# Display Flight Info #}
+    <div class="card mb-4">
+         <div class="card-header">Flight Information</div>
+         <ul class="list-group list-group-flush">
+           <li class="list-group-item"><strong>Flight ID:</strong> {{ flight_info.flight_id }}</li>
+           <li class="list-group-item"><strong>Flight Number:</strong> {{ flight_info.flight_number }}</li>
+           <li class="list-group-item"><strong>Departure Time:</strong> {{ flight_info.departure_time.strftime('%Y-%m-%d %H:%M') if flight_info.departure_time else 'N/A' }}</li>
+           <li class="list-group-item"><strong>Arrival Time:</strong> {{ flight_info.arrival_time.strftime('%Y-%m-%d %H:%M') if flight_info.arrival_time else 'N/A' }}</li>
+           <li class="list-group-item"><strong>Status:</strong> <span class="badge bg-{{ 'success' if flight_info.status == 'Scheduled' else ('warning' if flight_info.status == 'Delayed' else 'danger') }}">{{ flight_info.status }}</span></li>
+         </ul>
+    </div>
+
+    {# Display Passengers #}
+    <h3 class="mb-3">Passengers on this Flight (Total: {{ passengers|length }})</h3>
+    {% if passengers %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              {#<th>Passenger ID</th> We show it with name #}
+              <th>Passenger Name</th>
+              <th>Email</th>
+              <th>Seat Number</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in passengers %}
+              <tr>
+                {#<td>{{ p.passenger_id }}</td>#}
+                <td>{{ p.first_name }} {{ p.last_name }} (ID: {{ p.passenger_id }})</td>
+                <td>{{ p.email }}</td>
+                <td>{{ p.seat_number }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="alert alert-info">No confirmed passengers found for this flight.</p>
+    {% endif %}
+  {% else %}
+     {# Fallback if no error but also no flight_info (shouldn't happen often with error check) #}
+     <div class="alert alert-warning">Flight details could not be loaded.</div>
+  {% endif %}
+
+   <div class="mt-4">
+       <a href="{{ url_for('search_flights') }}" class="btn btn-secondary">« Back to Flight Search</a>
+   </div>
+
+</div>
+{% endblock %}

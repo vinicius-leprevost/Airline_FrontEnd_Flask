@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4">
+  <h2 class="mb-3">Booking Confirmation</h2>
+  {% if booking_info %}
+    <ul class="list-group">
+      <li class="list-group-item"><strong>Booking ID:</strong> {{ booking_info[0] }}</li>
+      <li class="list-group-item"><strong>Passenger ID:</strong> {{ booking_info[1] }}</li>
+      <li class="list-group-item"><strong>Flight ID:</strong> {{ booking_info[2] }}</li>
+      <li class="list-group-item"><strong>Booking Date:</strong> {{ booking_info[3] }}</li>
+      <li class="list-group-item"><strong>Seat Number:</strong> {{ booking_info[4] }}</li>
+      <li class="list-group-item"><strong>Status:</strong> {{ booking_info[5] }}</li>
+    </ul>
+  {% else %}
+    <p>No booking information found.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4">
+  <h2 class="mb-3">PL/SQL Executor</h2>
+  <form method="POST">
+    <div class="mb-3">
+      <label for="script" class="form-label">Enter your PL/SQL script:</label>
+      <textarea name="script" rows="10" class="form-control" style="width:100%;"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Execute Script</button>
+  </form>
+  {% if result %}
+    <div class="alert alert-secondary mt-3">
+      <strong>Result:</strong> {{ result }}
+    </div>
+  {% endif %}
+  {% if error %}
+    <div class="alert alert-danger mt-3">
+      <strong>Error:</strong> {{ error }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

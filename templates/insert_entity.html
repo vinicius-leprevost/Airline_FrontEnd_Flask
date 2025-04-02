@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4">
+  <h2 class="mb-3">Insert New Data</h2>
+  {% if message %}
+    <div class="alert alert-info">{{ message }}</div>
+  {% endif %}
+  <form method="post">
+    {% if preselected %}
+      <!-- If an entity is preselected, hide the dropdown -->
+      <input type="hidden" name="entity" value="{{ preselected }}">
+      <p>Inserting new data for: <strong>{{ preselected }}</strong></p>
+    {% else %}
+      <div class="mb-3">
+        <label for="entitySelect" class="form-label">Select Entity:</label>
+        <select id="entitySelect" name="entity" class="form-select" onchange="showForm()">
+          <option value="">-- Select --</option>
+          <option value="Passengers">Passengers</option>
+          <option value="Flights">Flights</option>
+          <option value="Aircraft">Aircraft</option>
+          <option value="Bookings">Bookings</option>
+          <option value="Crew">Crew</option>
+        </select>
+      </div>
+    {% endif %}
+
+    <!-- Passengers Form -->
+    <div id="form-Passengers" class="entity-form" style="display:none;">
+      <h3 class="mb-3">Insert New Passenger</h3>
+      <!-- ID is auto-generated -->
+      <div class="mb-3">
+        <label class="form-label">First Name:</label>
+        <input type="text" name="first_name" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Last Name:</label>
+        <input type="text" name="last_name" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email:</label>
+        <input type="text" name="email" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Phone:</label>
+        <input type="text" name="phone" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Date of Birth (YYYY-MM-DD):</label>
+        <input type="text" name="date_of_birth" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Passport Number:</label>
+        <input type="text" name="passport_number" class="form-control">
+      </div>
+    </div>
+
+    <!-- Flights Form -->
+    <div id="form-Flights" class="entity-form" style="display:none;">
+      <h3 class="mb-3">Insert New Flight</h3>
+      <!-- ID is auto-generated -->
+      <div class="mb-3">
+        <label class="form-label">Flight Number:</label>
+        <input type="text" name="flight_number" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Aircraft ID:</label>
+        <input type="text" name="aircraft_id" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Departure Airport ID:</label>
+        <input type="text" name="departure_airport_id" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Arrival Airport ID:</label>
+        <input type="text" name="arrival_airport_id" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Departure Time (YYYY-MM-DD HH24:MI:SS):</label>
+        <input type="text" name="departure_time" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Arrival Time (YYYY-MM-DD HH24:MI:SS):</label>
+        <input type="text" name="arrival_time" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Status:</label>
+        <input type="text" name="status" class="form-control">
+      </div>
+    </div>
+
+    <!-- Aircraft Form -->
+    <div id="form-Aircraft" class="entity-form" style="display:none;">
+      <h3 class="mb-3">Insert New Aircraft</h3>
+      <!-- ID is auto-generated -->
+      <div class="mb-3">
+        <label class="form-label">Model:</label>
+        <input type="text" name="model" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Manufacturer:</label>
+        <input type="text" name="manufacturer" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Capacity:</label>
+        <input type="text" name="capacity" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Registration Number:</label>
+        <input type="text" name="registration_number" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Year Built:</label>
+        <input type="text" name="year_built" class="form-control">
+      </div>
+    </div>
+
+    <!-- Bookings Form -->
+    <div id="form-Bookings" class="entity-form" style="display:none;">
+      <h3 class="mb-3">Insert New Booking</h3>
+      <!-- ID is auto-generated -->
+      <div class="mb-3">
+        <label class="form-label">Passenger ID:</label>
+        <input type="text" name="passenger_id" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Flight ID:</label>
+        <input type="text" name="flight_id" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Seat Number:</label>
+        <input type="text" name="seat_number" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Booking Status:</label>
+        <input type="text" name="booking_status" class="form-control">
+      </div>
+    </div>
+
+    <!-- Crew Form -->
+    <div id="form-Crew" class="entity-form" style="display:none;">
+      <h3 class="mb-3">Insert New Crew Member</h3>
+      <!-- ID is auto-generated -->
+      <div class="mb-3">
+        <label class="form-label">First Name:</label>
+        <input type="text" name="first_name" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Last Name:</label>
+        <input type="text" name="last_name" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Role:</label>
+        <input type="text" name="role" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Phone:</label>
+        <input type="text" name="phone" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email:</label>
+        <input type="text" name="email" class="form-control">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Submit</button>
+  </form>
+</div>
+
+<script>
+  // Hide all forms and remove required attributes from their fields
+  function hideAllForms() {
+    var forms = document.getElementsByClassName("entity-form");
+    for (var i = 0; i < forms.length; i++) {
+      forms[i].style.display = "none";
+      var inputs = forms[i].querySelectorAll("input, select, textarea");
+      for (var j = 0; j < inputs.length; j++) {
+        inputs[j].removeAttribute("required");
+      }
+    }
+  }
+
+  function showForm() {
+    var entitySelect = document.getElementById("entitySelect");
+    var entity = entitySelect.value;
+    hideAllForms();
+    if (entity !== "") {
+      var activeForm = document.getElementById("form-" + entity);
+      if (activeForm) {
+        activeForm.style.display = "block";
+        var activeInputs = activeForm.querySelectorAll("input, select, textarea");
+        for (var k = 0; k < activeInputs.length; k++) {
+          activeInputs[k].setAttribute("required", "required");
+        }
+      }
+    }
+  }
+
+  // If an entity is preselected (from ?entity=...), show that form on page load
+  {% if preselected %}
+  window.addEventListener("load", function() {
+    var entity = "{{ preselected }}";
+    hideAllForms();
+    var activeForm = document.getElementById("form-" + entity);
+    if (activeForm) {
+      activeForm.style.display = "block";
+      var activeInputs = activeForm.querySelectorAll("input, select, textarea");
+      for (var k = 0; k < activeInputs.length; k++) {
+        activeInputs[k].setAttribute("required", "required");
+      }
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}
