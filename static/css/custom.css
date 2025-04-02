@@ -354,3 +354,8 @@ textarea.form-control {
 .chartjs-tooltip {
   z-index: 1060 !important; /* Higher than default modal z-index */
 }
+
+select option {
+  color: #212529 !important; /* Use Bootstrap's standard dark text color */
+  background-color: #ffffff !important; /* Ensure standard white background */
+}

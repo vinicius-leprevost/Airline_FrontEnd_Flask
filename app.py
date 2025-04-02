@@ -772,9 +772,12 @@ def create_booking():
         airport_cursor_var = cursor.var(cx_Oracle.CURSOR)
         cursor.callproc("SP_GetAirports", [airport_cursor_var])
         airport_cursor = airport_cursor_var.getvalue()
-        airports = fetch_cursor_data(airport_cursor)
-        airport_cursor.close()
+        airports = fetch_cursor_data(airport_cursor) if airport_cursor else []
+        if airport_cursor: airport_cursor.close()
 
+        print("--- Debug: Airports Data ---")
+        print(airports)
+        print("--- End Debug ---")
 
     except Exception as e:
         # Log the full error for debugging: print(f"Error in /create_booking: {e}")

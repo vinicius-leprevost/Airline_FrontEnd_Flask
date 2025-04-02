@@ -5,10 +5,10 @@
   .seat-map-container {
     margin-top: 20px;
     padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #dee2e6; /* Softer border */
+    border-radius: var(--border-radius, 8px);
     background-color: #f8f9fa;
-    max-width: 500px; /* Adjust as needed */
+    max-width: 550px; /* Slightly wider */
     margin-left: auto;
     margin-right: auto;
   }
@@ -18,281 +18,367 @@
     margin-bottom: 5px;
   }
   .seat {
-    width: 30px;
-    height: 30px;
-    margin: 3px;
-    border-radius: 4px;
+    width: 35px; /* Slightly larger */
+    height: 35px;
+    margin: 4px; /* Increased spacing */
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: 11px; /* Slightly larger font */
     font-weight: bold;
     cursor: pointer;
-    border: 1px solid #6c757d;
-    background-color: #adb5bd; /* Default to unavailable */
-    color: white;
+    border: 1px solid #adb5bd; /* Default border */
+    background-color: #e9ecef; /* Default to light grey unavailable appearance */
+    color: #6c757d;
+     transition: all 0.2s ease; /* Smooth transition */
   }
   .seat.available {
-    background-color: #28a745; /* Green */
+    background-color: #d1e7dd; /* Lighter green */
+    border-color: #a3cfbb;
+    color: #0f5132; /* Darker green text */
     cursor: pointer;
   }
   .seat.available:hover {
-    background-color: #218838;
+    background-color: #28a745; /* Standard green on hover */
+    color: white;
+    transform: scale(1.1); /* Zoom effect */
   }
   .seat.booked {
-    background-color: #dc3545; /* Red */
+    background-color: #f8d7da; /* Lighter red */
+    border-color: #f1aeb5;
+    color: #842029; /* Darker red text */
     cursor: not-allowed;
-    opacity: 0.7;
+    opacity: 0.8; /* Slightly more visible */
   }
   .seat.selected {
-    background-color: #0052cc; /* Blue */
-    border-color: #003f9a;
-    box-shadow: 0 0 5px rgba(0, 82, 204, 0.8);
+    background-color: var(--primary-color, #0052cc); /* Use primary color */
+    border-color: var(--primary-color-dark, #003f9a);
+    color: white;
+    box-shadow: 0 0 8px rgba(0, 82, 204, 0.8);
+     transform: scale(1.1);
   }
   .seat.aisle {
       background-color: transparent;
       border: none;
       cursor: default;
-      width: 15px; /* Narrower aisle */
+      width: 20px; /* Wider aisle */
   }
    .seat-label { /* For Row numbers */
-      width: 25px;
-      margin: 3px;
+      width: 30px; /* Wider label */
+      margin: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
+      color: #6c757d;
   }
+   .legend {
+      display: flex;
+      justify-content: center;
+      margin-top: 15px;
+      gap: 20px; /* Space between legend items */
+      font-size: 0.9em;
+   }
+   .legend-item {
+       display: flex;
+       align-items: center;
+   }
+   .legend-item .seat {
+       width: 20px; height: 20px; margin-right: 8px; font-size: 9px; cursor: default;
+   }
+   .legend-item .seat:hover { transform: none; } /* Disable hover effect in legend */
+
   #passenger-new-form, #seat-map-section {
     display: none; /* Hide initially */
   }
+  #seat-map-section.visible {
+      display: block; /* Use class to control visibility */
+      animation: fadeIn 0.5s ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
 </style>
 
 <div class="card p-4 card-animated">
   <h2 class="mb-3 fancy-title">Create New Booking</h2>
 
   {% if error %}
-  <div class="alert alert-danger">{{ error }}</div>
-  {% endif %}
-  {% if booking_success_id %}
-  <div class="alert alert-success">Booking successful! Confirmation ID: {{ booking_success_id }}</div>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+     {{ error }}
+     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
   {% endif %}
 
-  <form method="POST" id="booking-form">
+  <form method="POST" id="booking-form" novalidate>
 
     <!-- Step 1: Passenger Selection -->
     <div class="card mb-3">
-      <div class="card-header">Step 1: Select Passenger</div>
+      <div class="card-header"><i class="bi bi-person-fill me-2"></i>Step 1: Select Passenger</div>
       <div class="card-body">
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="passenger_type" id="passenger_existing" value="existing" checked onchange="togglePassengerForm()">
-          <label class="form-check-label" for="passenger_existing">Existing Passenger</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="passenger_type" id="passenger_new" value="new" onchange="togglePassengerForm()">
-          <label class="form-check-label" for="passenger_new">New Passenger</label>
+        <div class="mb-3">
+             <div class="form-check form-check-inline">
+             <input class="form-check-input" type="radio" name="passenger_type" id="passenger_existing" value="existing" {% if not form_data.passenger_type or form_data.passenger_type == 'existing' %}checked{% endif %} onchange="togglePassengerForm()">
+             <label class="form-check-label" for="passenger_existing">Existing Passenger</label>
+             </div>
+             <div class="form-check form-check-inline">
+             <input class="form-check-input" type="radio" name="passenger_type" id="passenger_new" value="new" {% if form_data.passenger_type == 'new' %}checked{% endif %} onchange="togglePassengerForm()">
+             <label class="form-check-label" for="passenger_new">New Passenger</label>
+             </div>
         </div>
 
         <div id="passenger-existing-form" class="mt-3">
           <label for="existing_passenger_id" class="form-label">Select Passenger:</label>
           <select name="existing_passenger_id" id="existing_passenger_id" class="form-select" required>
-            <option value="">-- Select --</option>
+            <option value="">-- Please Select --</option>
             {% for p in passengers %}
-              <option value="{{ p.passenger_id }}" {% if form_data.get('existing_passenger_id')|int(default=0) == p.passenger_id %}selected{% endif %}>
+              <option value="{{ p.passenger_id }}" {% if form_data.get('existing_passenger_id')|int == p.passenger_id %}selected{% endif %}>
                 {{ p.last_name }}, {{ p.first_name }} (ID: {{ p.passenger_id }})
               </option>
             {% endfor %}
           </select>
+          <div class="invalid-feedback">Please select a passenger.</div>
         </div>
 
-        <div id="passenger-new-form" class="mt-3 border p-3 rounded">
+        <div id="passenger-new-form" class="mt-3 border p-3 rounded bg-light">
           <h5>New Passenger Details</h5>
           <div class="row">
              <div class="col-md-6 mb-3">
-                 <label class="form-label">First Name:</label>
-                 <input type="text" name="new_first_name" class="form-control" value="{{ form_data.new_first_name|default('') }}">
+                 <label for="new_first_name" class="form-label">First Name:<span class="text-danger">*</span></label>
+                 <input type="text" name="new_first_name" id="new_first_name" class="form-control" value="{{ form_data.get('new_first_name', '') }}" required>
+                 <div class="invalid-feedback">First name is required.</div>
              </div>
              <div class="col-md-6 mb-3">
-                 <label class="form-label">Last Name:</label>
-                 <input type="text" name="new_last_name" class="form-control" value="{{ form_data.new_last_name|default('') }}">
+                 <label for="new_last_name" class="form-label">Last Name:<span class="text-danger">*</span></label>
+                 <input type="text" name="new_last_name" id="new_last_name" class="form-control" value="{{ form_data.get('new_last_name', '') }}" required>
+                  <div class="invalid-feedback">Last name is required.</div>
              </div>
              <div class="col-md-6 mb-3">
-                 <label class="form-label">Email:</label>
-                 <input type="email" name="new_email" class="form-control" value="{{ form_data.new_email|default('') }}">
+                 <label for="new_email" class="form-label">Email:<span class="text-danger">*</span></label>
+                 <input type="email" name="new_email" id="new_email" class="form-control" value="{{ form_data.get('new_email', '') }}" required>
+                  <div class="invalid-feedback">Please provide a valid email address.</div>
              </div>
              <div class="col-md-6 mb-3">
-                 <label class="form-label">Phone:</label>
-                 <input type="text" name="new_phone" class="form-control" value="{{ form_data.new_phone|default('') }}">
+                 <label for="new_phone" class="form-label">Phone:</label>
+                 <input type="tel" name="new_phone" id="new_phone" class="form-control" value="{{ form_data.get('new_phone', '') }}">
              </div>
              <div class="col-md-6 mb-3">
-                 <label class="form-label">Date of Birth (YYYY-MM-DD):</label>
-                 <input type="text" name="new_date_of_birth" placeholder="YYYY-MM-DD" class="form-control" value="{{ form_data.new_date_of_birth|default('') }}">
+                 <label for="new_date_of_birth" class="form-label">Date of Birth:</label>
+                 <input type="date" name="new_date_of_birth" id="new_date_of_birth" placeholder="YYYY-MM-DD" class="form-control" value="{{ form_data.get('new_date_of_birth', '') }}">
              </div>
              <div class="col-md-6 mb-3">
-                 <label class="form-label">Passport Number:</label>
-                 <input type="text" name="new_passport_number" class="form-control" value="{{ form_data.new_passport_number|default('') }}">
+                 <label for="new_passport_number" class="form-label">Passport Number:</label>
+                 <input type="text" name="new_passport_number" id="new_passport_number" class="form-control" value="{{ form_data.get('new_passport_number', '') }}">
              </div>
           </div>
+           <small class="text-muted"><span class="text-danger">*</span> Required fields</small>
         </div>
       </div>
     </div>
 
     <!-- Step 2: Flight Selection -->
     <div class="card mb-3">
-      <div class="card-header">Step 2: Select Flight</div>
+      <div class="card-header"><i class="bi bi-airplane-fill me-2"></i>Step 2: Select Flight</div>
       <div class="card-body">
-        {# Optional Filters - Use GET method to requery page or AJAX #}
-        {# Example: Simple reload with query params #}
-        <div class="row g-3 align-items-end border p-3 rounded mb-3">
-             <div class="col-md-3">
-                  <label for="filter_dep_loc" class="form-label">Departure:</label>
-                  <select id="filter_dep_loc" name="dep_loc" class="form-select form-select-sm">
-                       <option value="">Any</option>
-                       {% for ap in airports %}
-                       <option value="{{ ap.airport_id }}" {% if request.args.get('dep_loc')|int == ap.airport_id %}selected{% endif %}>{{ ap.airport_name }}</option>
-                       {% endfor %}
-                  </select>
+        <fieldset class="border p-3 rounded mb-3 bg-light">
+             <legend class="w-auto fs-6 px-2">Filter Available Flights</legend>
+             <div class="row g-3 align-items-end">
+                  <div class="col-md-3">
+                       <label for="filter_dep_loc" class="form-label">Departure:</label>
+                       <select id="filter_dep_loc" name="dep_loc" class="form-select form-select-sm">
+                            <option value="">Any Airport</option>
+                            {% for ap in airports %}
+                            <option value="{{ ap.airport_id }}" {% if request.args.get('dep_loc')|string == ap.airport_id|string %}selected{% endif %}>
+                                {{ ap.name }}
+                            </option>
+                            {% endfor %}
+                       </select>
+                  </div>
+                  <div class="col-md-3">
+                       <label for="filter_arr_loc" class="form-label">Arrival:</label>
+                       <select id="filter_arr_loc" name="arr_loc" class="form-select form-select-sm">
+                            <option value="">Any Airport</option>
+                            {% for ap in airports %}
+                            <option value="{{ ap.airport_id }}" {% if request.args.get('arr_loc')|string == ap.airport_id|string %}selected{% endif %}>
+                                {{ ap.name }}
+                            </option>
+                            {% endfor %}
+                       </select>
+                  </div>
+                  <div class="col-md-2">
+                       <label for="filter_start_date" class="form-label">From Date:</label>
+                       <input type="date" id="filter_start_date" name="start_date" class="form-control form-control-sm" value="{{ request.args.get('start_date', '') }}">
+                  </div>
+                  <div class="col-md-2">
+                       <label for="filter_end_date" class="form-label">To Date:</label>
+                       <input type="date" id="filter_end_date" name="end_date" class="form-control form-control-sm" value="{{ request.args.get('end_date', '') }}">
+                  </div>
+                  <div class="col-md-2">
+                       <button type="button" class="btn btn-secondary btn-sm w-100" onclick="applyFilters()"><i class="bi bi-filter me-1"></i> Filter</button>
+                  </div>
              </div>
-             <div class="col-md-3">
-                  <label for="filter_arr_loc" class="form-label">Arrival:</label>
-                  <select id="filter_arr_loc" name="arr_loc" class="form-select form-select-sm">
-                       <option value="">Any</option>
-                       {% for ap in airports %}
-                       <option value="{{ ap.airport_id }}" {% if request.args.get('arr_loc')|int == ap.airport_id %}selected{% endif %}>{{ ap.airport_name }}</option>
-                       {% endfor %}
-                  </select>
-             </div>
-             <div class="col-md-2">
-                  <label for="filter_start_date" class="form-label">From Date:</label>
-                  <input type="date" id="filter_start_date" name="start_date" class="form-control form-control-sm" value="{{ request.args.get('start_date', '') }}">
-             </div>
-             <div class="col-md-2">
-                  <label for="filter_end_date" class="form-label">To Date:</label>
-                  <input type="date" id="filter_end_date" name="end_date" class="form-control form-control-sm" value="{{ request.args.get('end_date', '') }}">
-             </div>
-             <div class="col-md-2">
-                  <button type="button" class="btn btn-secondary btn-sm w-100" onclick="applyFilters()">Filter Flights</button>
-             </div>
-        </div>
+        </fieldset>
 
-        <label for="flight_id" class="form-label">Available Flights:</label>
+        <label for="flight_id" class="form-label">Select Flight:<span class="text-danger">*</span></label>
         <select name="flight_id" id="flight_id" class="form-select" required>
           <option value="">-- Select a Flight --</option>
           {% for f in flights %}
-            <option value="{{ f.flight_id }}" data-capacity="{{ f.capacity }}" {% if form_data.get('flight_id')|int(default=0) == f.flight_id %}selected{% endif %}>
-              {{ f.flight_number }} ({{ f.departure_airport }} to {{ f.arrival_airport }}) - Departs: {{ f.departure_time.strftime('%Y-%m-%d %H:%M') }}
+            <option value="{{ f.flight_id }}" data-capacity="{{ f.capacity }}" {% if form_data.get('flight_id')|string == f.flight_id|string %}selected{% endif %}>
+              {{ f.flight_number }} ({{ f.departure_location }} to {{ f.arrival_location }}) - Departs: {{ f.departure_time.strftime('%Y-%m-%d %H:%M') if f.departure_time else 'N/A' }}
             </option>
           {% endfor %}
         </select>
+         <div class="invalid-feedback">Please select a flight.</div>
         <div class="form-text">Selecting a flight will load the seat map below.</div>
       </div>
     </div>
 
     <!-- Step 3: Seat Selection -->
     <div class="card mb-3" id="seat-map-section">
-      <div class="card-header">Step 3: Select Seat</div>
+      <div class="card-header"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Step 3: Select Seat<span class="text-danger">*</span></div>
       <div class="card-body">
-        <div id="seat-map-container" class="seat-map-container">
-          <p id="seat-map-placeholder">Please select a flight above to view the seat map.</p>
+         <div class="legend">
+             <div class="legend-item"><span class="seat available">A</span> Available</div>
+             <div class="legend-item"><span class="seat booked">B</span> Booked</div>
+             <div class="legend-item"><span class="seat selected">C</span> Selected</div>
+         </div>
+        <div id="seat-map-container" class="seat-map-container text-center">
+          <div id="seat-map-placeholder" class="text-muted p-3">Please select a flight above to view the seat map.</div>
           {# Seat map will be generated here by JavaScript #}
         </div>
-        <input type="hidden" name="selected_seat" id="selected_seat" value="{{ form_data.selected_seat|default('') }}">
+        <input type="hidden" name="selected_seat" id="selected_seat" value="{{ form_data.get('selected_seat', '') }}" required>
          <div id="seat-selection-feedback" class="mt-2 text-center fw-bold"></div>
+         <div id="seat-selection-error" class="text-danger text-center mt-1" style="display: none;">Please select an available seat.</div> {# Error message placeholder #}
       </div>
     </div>
 
     <!-- Submit Button -->
-    <div class="mt-4">
-      <button type="submit" class="btn btn-primary btn-lg w-100">Book Flight</button>
+    <div class="mt-4 d-grid"> {# Use d-grid for full width button #}
+      <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-circle-fill me-2"></i>Book Flight</button>
     </div>
 
   </form>
 </div>
 
 <script>
+  // --- Get DOM Elements ---
+  const passengerExistingRadio = document.getElementById('passenger_existing');
+  const passengerNewRadio = document.getElementById('passenger_new'); // Added reference
   const passengerExistingForm = document.getElementById('passenger-existing-form');
   const passengerNewForm = document.getElementById('passenger-new-form');
   const existingPassengerSelect = document.getElementById('existing_passenger_id');
-  const newPassengerInputs = passengerNewForm.querySelectorAll('input');
+  // Select ALL inputs within the new passenger form for saving/restoring
+  const newPassengerInputsAll = passengerNewForm.querySelectorAll('input');
+  const newPassengerRequiredInputs = passengerNewForm.querySelectorAll('input[required]'); // Select only required inputs for validation
   const flightSelect = document.getElementById('flight_id');
   const seatMapSection = document.getElementById('seat-map-section');
   const seatMapContainer = document.getElementById('seat-map-container');
   const seatMapPlaceholder = document.getElementById('seat-map-placeholder');
   const selectedSeatInput = document.getElementById('selected_seat');
   const seatSelectionFeedback = document.getElementById('seat-selection-feedback');
+  const seatSelectionError = document.getElementById('seat-selection-error');
+  const bookingForm = document.getElementById('booking-form');
 
+
+  // --- Functions ---
   function togglePassengerForm() {
-    if (document.getElementById('passenger_existing').checked) {
-      passengerExistingForm.style.display = 'block';
-      passengerNewForm.style.display = 'none';
-      existingPassengerSelect.required = true;
-      newPassengerInputs.forEach(input => input.required = false); // Make new inputs not required
-    } else {
-      passengerExistingForm.style.display = 'none';
-      passengerNewForm.style.display = 'block';
-      existingPassengerSelect.required = false;
-       // Add required attributes to appropriate new passenger fields
-      // Example: Make first/last name and email required
-      passengerNewForm.querySelector('input[name="new_first_name"]').required = true;
-      passengerNewForm.querySelector('input[name="new_last_name"]').required = true;
-      passengerNewForm.querySelector('input[name="new_email"]').required = true;
-      // Set others as needed
-    }
+    const isExisting = passengerExistingRadio.checked;
+    passengerExistingForm.style.display = isExisting ? 'block' : 'none';
+    passengerNewForm.style.display = isExisting ? 'none' : 'block';
+    existingPassengerSelect.required = isExisting;
+    // Set required attribute based on visibility for validation purposes
+    newPassengerRequiredInputs.forEach(input => input.required = !isExisting);
   }
 
   function applyFilters() {
+      // --- HOTFIX: Save New Passenger Data before filtering ---
+      if (passengerNewRadio.checked) {
+          const newPassengerData = {};
+          newPassengerInputsAll.forEach(input => {
+              if (input.name) { // Only save inputs with a name attribute
+                  newPassengerData[input.name] = input.value;
+              }
+          });
+          // Store the data as a JSON string in sessionStorage
+          sessionStorage.setItem('tempNewPassengerData', JSON.stringify(newPassengerData));
+          // Also store that 'new' was selected
+          sessionStorage.setItem('tempPassengerType', 'new');
+      } else {
+           // Clear any previously stored data if existing is selected now
+           sessionStorage.removeItem('tempNewPassengerData');
+           sessionStorage.removeItem('tempPassengerType');
+      }
+      // --- End HOTFIX part 1 ---
+
       const depLoc = document.getElementById('filter_dep_loc').value;
       const arrLoc = document.getElementById('filter_arr_loc').value;
       const startDate = document.getElementById('filter_start_date').value;
       const endDate = document.getElementById('filter_end_date').value;
-      // Construct URL with query parameters
-      let url = "{{ url_for('create_booking') }}?";
-      if (depLoc) url += `dep_loc=${encodeURIComponent(depLoc)}&`;
-      if (arrLoc) url += `arr_loc=${encodeURIComponent(arrLoc)}&`;
-      if (startDate) url += `start_date=${encodeURIComponent(startDate)}&`;
-      if (endDate) url += `end_date=${encodeURIComponent(endDate)}&`;
-      // Remove trailing '&' if exists
-      if (url.endsWith('&')) url = url.slice(0, -1);
+      const params = new URLSearchParams();
+      if (depLoc) params.set('dep_loc', depLoc);
+      if (arrLoc) params.set('arr_loc', arrLoc);
+      if (startDate) params.set('start_date', startDate);
+      if (endDate) params.set('end_date', endDate);
+
       // Reload the page with filters
-      window.location.href = url;
+      window.location.href = `{{ url_for('create_booking') }}?${params.toString()}`;
   }
 
-  flightSelect.addEventListener('change', function() {
-    const flightId = this.value;
-    selectedSeatInput.value = ''; // Clear previous selection
-    seatSelectionFeedback.textContent = ''; // Clear feedback
-    seatMapContainer.innerHTML = ''; // Clear previous map
-    seatMapContainer.appendChild(seatMapPlaceholder); // Show placeholder
-    seatMapPlaceholder.textContent = "Loading seat map...";
-    seatMapSection.style.display = 'none'; // Hide until loaded
+ function fetchAndDrawSeatMap(flightId) {
+     selectedSeatInput.value = ''; // Clear previous selection
+     seatSelectionFeedback.textContent = ''; // Clear feedback
+     seatSelectionError.style.display = 'none'; // Hide error
+     seatMapContainer.innerHTML = ''; // Clear previous map
+     seatMapPlaceholder.textContent = "Loading seat map...";
+     seatMapContainer.appendChild(seatMapPlaceholder); // Show placeholder
+     seatMapPlaceholder.style.display = 'block';
+     seatMapSection.classList.add('visible'); // Show section using class for animation
 
+     fetch(`/api/get_seat_layout/${flightId}`)
+       .then(response => {
+           if (!response.ok) {
+                // Try to parse error message from JSON response body
+                return response.json().then(errData => {
+                    throw new Error(errData.error || `HTTP error ${response.status}`);
+                }).catch(() => {
+                     // Fallback if response is not JSON or has no error key
+                    throw new Error(`HTTP error ${response.status}`);
+                });
+           }
+           return response.json();
+       })
+       .then(data => {
+           seatMapPlaceholder.style.display = 'none'; // Hide placeholder
+           if (data.error) { // Check for application-level error in successful response
+               throw new Error(data.error);
+           }
+           drawSeatMap(data.capacity, data.booked_seats || []);
+           // Re-select seat if one was previously selected and is still available
+           const previousSeat = selectedSeatInput.value; // Get value before fetch started
+            if (previousSeat) {
+                 const seatElement = seatMapContainer.querySelector(`.seat[data-seat-id="${previousSeat}"]`);
+                 if (seatElement && seatElement.classList.contains('available')) {
+                      handleSeatClick({ target: seatElement }); // Simulate click
+                 } else {
+                      selectedSeatInput.value = ''; // Clear invalid previous selection
+                 }
+            }
+       })
+       .catch(error => {
+         console.error('Error fetching seat layout:', error);
+         seatMapContainer.innerHTML = `<div class="alert alert-warning p-2">Error loading seat map: ${error.message}</div>`;
+         seatMapPlaceholder.style.display = 'none';
+       });
+ }
 
-    if (flightId) {
-      seatMapSection.style.display = 'block'; // Show section
-      fetch(`/api/get_seat_layout/${flightId}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          seatMapPlaceholder.style.display = 'none'; // Hide placeholder
-          if (data.error) {
-              throw new Error(data.error);
-          }
-          drawSeatMap(data.capacity, data.booked_seats || []);
-        })
-        .catch(error => {
-          console.error('Error fetching seat layout:', error);
-          seatMapContainer.innerHTML = `<p class="text-danger">Error loading seat map: ${error.message}</p>`;
-           seatMapPlaceholder.style.display = 'none';
-        });
-    }
-  });
 
   function drawSeatMap(capacity, bookedSeats) {
-    seatMapContainer.innerHTML = ''; // Clear previous map or placeholder
+    seatMapContainer.innerHTML = ''; // Clear previous map or placeholder/error
+    if (capacity <= 0) {
+         seatMapContainer.innerHTML = `<div class="alert alert-warning p-2">Seat map is unavailable (Capacity: ${capacity}).</div>`;
+         return;
+    }
+
     const seatsPerRow = 6; // Standard A-F layout assumption
     const numRows = Math.ceil(capacity / seatsPerRow);
     const seatLetters = ['A', 'B', 'C', '', 'D', 'E', 'F']; // '' for aisle
@@ -301,13 +387,13 @@
       const rowDiv = document.createElement('div');
       rowDiv.className = 'seat-row';
 
-       // Add row number label
-       const rowLabel = document.createElement('div');
-       rowLabel.className = 'seat-label';
-       rowLabel.textContent = r;
-       rowDiv.appendChild(rowLabel);
+      // Add row number label
+      const rowLabel = document.createElement('div');
+      rowLabel.className = 'seat-label';
+      rowLabel.textContent = r;
+      rowDiv.appendChild(rowLabel);
 
-
+      let seatsInCurrentVisualRow = 0;
       for (let i = 0; i < seatLetters.length; i++) {
          const seatLetter = seatLetters[i];
          if (seatLetter === '') { // Aisle
@@ -317,18 +403,24 @@
               continue;
          }
 
-        // Check if current seat exceeds capacity
-        const currentSeatIndex = (r - 1) * seatsPerRow + (i < 3 ? i : i - 1); // Adjust index for aisle
-        if (currentSeatIndex >= capacity) {
-             // Optionally add an empty placeholder or just stop adding seats for this row
+        // Calculate the actual seat index (0-based) for this flight capacity
+        // This accounts for the visual ABC DEF layout mapping to linear capacity
+        const potentialSeatIndexInRow = (seatLetter <= 'C') ? (seatLetters.slice(0, i).filter(s => s !== '').length) : (3 + seatLetters.slice(4, i+1).filter(s => s !== '').length);
+        const overallSeatIndex = (r - 1) * seatsPerRow + potentialSeatIndexInRow; // 0-based index
+
+
+        if (overallSeatIndex >= capacity) {
+             // Add an empty, non-functional div to maintain layout alignment
               const emptySeat = document.createElement('div');
-              emptySeat.className = 'seat'; // Style as unavailable/empty
+              emptySeat.className = 'seat';
               emptySeat.style.backgroundColor = 'transparent';
               emptySeat.style.border = 'none';
-               rowDiv.appendChild(emptySeat);
-              continue; // Skip to next seat letter or row
+              emptySeat.style.cursor = 'default';
+              rowDiv.appendChild(emptySeat);
+              continue; // Skip to next iteration
         }
 
+        // If seat is within capacity, create the actual seat div
         const seatId = `${r}${seatLetter}`;
         const seatDiv = document.createElement('div');
         seatDiv.className = 'seat';
@@ -337,76 +429,167 @@
 
         if (bookedSeats.includes(seatId)) {
           seatDiv.classList.add('booked');
+          seatDiv.title = `Seat ${seatId} (Booked)`; // Tooltip
         } else {
           seatDiv.classList.add('available');
+          seatDiv.title = `Seat ${seatId} (Available)`; // Tooltip
           seatDiv.addEventListener('click', handleSeatClick);
         }
         rowDiv.appendChild(seatDiv);
-      }
+      } // end seat letter loop
       seatMapContainer.appendChild(rowDiv);
-    }
+    } // end row loop
   }
+
 
   function handleSeatClick(event) {
     const clickedSeat = event.target;
+    if (!clickedSeat.classList.contains('available')) return; // Ignore clicks on booked/aisle etc.
+
     const seatId = clickedSeat.dataset.seatId;
 
-    // Remove 'selected' from previously selected seat
+    // Remove 'selected' from previously selected seat (if any)
     const currentlySelected = seatMapContainer.querySelector('.seat.selected');
-    if (currentlySelected) {
+    if (currentlySelected && currentlySelected !== clickedSeat) {
       currentlySelected.classList.remove('selected');
+      currentlySelected.title = `Seat ${currentlySelected.dataset.seatId} (Available)`; // Update title
     }
 
-    // Add 'selected' to clicked seat
-    clickedSeat.classList.add('selected');
+    // Toggle 'selected' on clicked seat
+    clickedSeat.classList.toggle('selected');
 
-    // Update hidden input and feedback
-    selectedSeatInput.value = seatId;
-    seatSelectionFeedback.textContent = `Seat ${seatId} selected.`;
-     seatSelectionFeedback.className = 'mt-2 text-center fw-bold text-success';
-
+    if (clickedSeat.classList.contains('selected')) {
+        selectedSeatInput.value = seatId;
+        seatSelectionFeedback.textContent = `Seat ${seatId} selected.`;
+        seatSelectionFeedback.className = 'mt-2 text-center fw-bold text-success';
+        seatSelectionError.style.display = 'none'; // Hide error message
+        clickedSeat.title = `Seat ${seatId} (Selected)`; // Update title
+    } else {
+        // Seat was deselected
+        selectedSeatInput.value = '';
+        seatSelectionFeedback.textContent = '';
+        clickedSeat.title = `Seat ${seatId} (Available)`; // Update title
+    }
   }
 
-  // Initial setup on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    togglePassengerForm(); // Set initial state based on checked radio
+   // --- Bootstrap 5 Form Validation ---
+   function validateForm() {
+        let isValid = true;
+        bookingForm.classList.add('was-validated'); // Trigger Bootstrap styles
 
-     // If form was submitted with errors, potentially re-select flight and load map
-     const initialFlightId = flightSelect.value;
-     const initialSeat = selectedSeatInput.value;
-     if (initialFlightId) {
-         flightSelect.dispatchEvent(new Event('change')); // Trigger change to load map
-         // If a seat was previously selected and map reloads, try to re-select it visually
-         if(initialSeat) {
-             // Need a slight delay for map to potentially draw
-             setTimeout(() => {
-                  const seatElement = seatMapContainer.querySelector(`.seat[data-seat-id="${initialSeat}"]`);
-                  if (seatElement && seatElement.classList.contains('available')) {
-                       seatElement.click(); // Simulate click to re-select
-                  } else if (seatElement && seatElement.classList.contains('booked')) {
-                       // Handle case where seat became booked since last attempt
-                        seatSelectionFeedback.textContent = `Seat ${initialSeat} is no longer available. Please select another.`;
-                        seatSelectionFeedback.className = 'mt-2 text-center fw-bold text-danger';
-                        selectedSeatInput.value = ''; // Clear invalid selection
+        // Check flight selection
+        if (!flightSelect.value) {
+            flightSelect.classList.add('is-invalid'); // Force invalid style if needed
+            isValid = false;
+        } else {
+             flightSelect.classList.remove('is-invalid');
+        }
+
+        // Check seat selection
+        if (!selectedSeatInput.value) {
+            seatSelectionError.style.display = 'block'; // Show custom error message
+            isValid = false;
+        } else {
+             seatSelectionError.style.display = 'none';
+        }
+
+        // Check passenger selection/details
+        if (passengerExistingRadio.checked) {
+             if (!existingPassengerSelect.value) {
+                  existingPassengerSelect.classList.add('is-invalid');
+                  isValid = false;
+             } else {
+                  existingPassengerSelect.classList.remove('is-invalid');
+             }
+        } else {
+             // Validate required new passenger inputs
+             newPassengerRequiredInputs.forEach(input => {
+                  if (!input.value.trim()) {
+                       // Bootstrap's 'was-validated' should handle showing invalid-feedback
+                       isValid = false;
                   }
-             }, 500); // Adjust delay if needed
-         }
-     }
+             });
+             // Special check for email format (basic)
+             const emailInput = passengerNewForm.querySelector('input[name="new_email"]');
+             if (emailInput.value && !/^\S+@\S+\.\S+$/.test(emailInput.value)) {
+                  emailInput.classList.add('is-invalid'); // Ensure invalid style
+                   isValid = false;
+             }
+        }
 
+        return isValid;
+   }
+
+  // --- Event Listeners ---
+  flightSelect.addEventListener('change', function() {
+    const flightId = this.value;
+    if (flightId) {
+        fetchAndDrawSeatMap(flightId);
+    } else {
+        seatMapSection.classList.remove('visible'); // Hide section
+        seatMapContainer.innerHTML = ''; // Clear map
+        seatMapContainer.appendChild(seatMapPlaceholder); // Show placeholder
+        seatMapPlaceholder.textContent = "Please select a flight above to view the seat map.";
+        seatMapPlaceholder.style.display = 'block';
+        selectedSeatInput.value = ''; // Clear selection
+        seatSelectionFeedback.textContent = '';
+         seatSelectionError.style.display = 'none';
+    }
   });
 
-   // Basic Form Validation before submit (optional but recommended)
-   document.getElementById('booking-form').addEventListener('submit', function(event) {
-        const selectedSeat = selectedSeatInput.value;
-        if (!selectedSeat) {
-             alert('Please select a seat from the map.');
-             event.preventDefault(); // Stop form submission
-             seatSelectionFeedback.textContent = `Seat selection required.`;
-             seatSelectionFeedback.className = 'mt-2 text-center fw-bold text-danger';
-             return false;
+  bookingForm.addEventListener('submit', function(event) {
+        if (!validateForm()) {
+             event.preventDefault(); // Stop submission
+             event.stopPropagation();
+              // Optionally scroll to the first error, Bootstrap validation should highlight fields
+              const firstInvalidField = bookingForm.querySelector('.is-invalid, input[required]:invalid, select[required]:invalid');
+              if (firstInvalidField) {
+                   firstInvalidField.focus();
+              } else if (!selectedSeatInput.value) {
+                  // If only seat is missing, maybe scroll to seat map
+                  seatMapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+
         }
-        // Add other validation checks if needed (e.g., passenger details)
    });
+
+  // --- Initial Setup on Page Load ---
+  document.addEventListener('DOMContentLoaded', () => {
+    // --- HOTFIX: Restore New Passenger Data ---
+    const savedDataType = sessionStorage.getItem('tempPassengerType');
+    if (savedDataType === 'new') {
+        const savedData = sessionStorage.getItem('tempNewPassengerData');
+        if (savedData) {
+            try {
+                const passengerData = JSON.parse(savedData);
+                // Check the 'New Passenger' radio button
+                passengerNewRadio.checked = true;
+                // Populate the form fields
+                newPassengerInputsAll.forEach(input => {
+                    if (input.name && passengerData.hasOwnProperty(input.name)) {
+                        input.value = passengerData[input.name];
+                    }
+                });
+            } catch (e) {
+                console.error("Error parsing saved passenger data:", e);
+            } finally {
+                // Clean up storage regardless of success/failure
+                sessionStorage.removeItem('tempNewPassengerData');
+                sessionStorage.removeItem('tempPassengerType');
+            }
+        }
+    }
+    // --- End HOTFIX part 2 ---
+
+    // Now toggle form visibility based on potentially restored radio button state
+    togglePassengerForm();
+
+    // Load seat map if a flight is selected (could be from server or restored data)
+    const initialFlightId = flightSelect.value;
+    if (initialFlightId) {
+         fetchAndDrawSeatMap(initialFlightId);
+    }
+  });
 
 </script>
 {% endblock %}
