@@ -28,8 +28,37 @@ def fetch_cursor_data(cursor):
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 
+# Helper to format data for Chart.js (labels, data)
+def format_chart_data(cursor, label_col_index=0, data_col_index=1, date_format=None):
+    labels = []
+    data = []
+    if cursor:
+        raw_data = cursor.fetchall()
+        for row in raw_data:
+            label = row[label_col_index]
+            if isinstance(label, datetime.datetime) and date_format:
+                labels.append(label.strftime(date_format))
+            else:
+                labels.append(label)
+            data.append(row[data_col_index])
+    return {"labels": labels, "data": data}
+
+# Helper to format scatter data (list of {x, y} objects)
+def format_scatter_data(cursor, x_col_index=0, y_col_index=1):
+    scatter_data = []
+    if cursor:
+        raw_data = cursor.fetchall()
+        for row in raw_data:
+             # Ensure data is numeric or handle potential errors/nulls
+            x_val = row[x_col_index] if row[x_col_index] is not None else 0
+            y_val = row[y_col_index] if row[y_col_index] is not None else 0
+            scatter_data.append({"x": x_val, "y": y_val})
+    return {"data": scatter_data}
+
+
 @app.route('/')
 def home():
+    # Existing data structures
     dashboard_data = {
         "passenger_count": "N/A",
         "flight_count": "N/A",
@@ -40,6 +69,16 @@ def home():
     flights_chart_data = {"labels": [], "data": []}
     bookings_chart_data = {"labels": [], "data": []}
     aircraft_chart_data = {"labels": [], "data": []}
+
+    # --- NEW: Data structures for additional plots ---
+    passenger_age_data = {"labels": [], "data": []}
+    payment_status_data = {"labels": [], "data": []}
+    crew_role_data = {"labels": [], "data": []}
+    bookings_trend_data = {"labels": [], "data": []}
+    top_airports_data = {"labels": [], "data": []}
+    flights_per_airport_data = {"labels": [], "data": []}
+    bookings_capacity_data = {"data": []} # For scatter plot
+
     error = None
     conn = None
     cursor = None
@@ -48,60 +87,109 @@ def home():
         conn = get_connection()
         cursor = conn.cursor()
 
-        # --- Fetch Counts using Procedure ---
+        # --- Fetch Counts using Procedure (Existing) ---
         p_count = cursor.var(cx_Oracle.NUMBER)
         f_count = cursor.var(cx_Oracle.NUMBER)
         b_count = cursor.var(cx_Oracle.NUMBER)
         a_count = cursor.var(cx_Oracle.NUMBER)
         c_count = cursor.var(cx_Oracle.NUMBER)
         cursor.callproc("SP_GetDashboardCounts", [p_count, f_count, b_count, a_count, c_count])
-        # Check for procedure error indicator (-1)
         dashboard_data["passenger_count"] = int(p_count.getvalue()) if p_count.getvalue() != -1 else "Error"
         dashboard_data["flight_count"] = int(f_count.getvalue()) if f_count.getvalue() != -1 else "Error"
         dashboard_data["booking_count"] = int(b_count.getvalue()) if b_count.getvalue() != -1 else "Error"
         dashboard_data["aircraft_count"] = int(a_count.getvalue()) if a_count.getvalue() != -1 else "Error"
         dashboard_data["crew_count"] = int(c_count.getvalue()) if c_count.getvalue() != -1 else "Error"
 
-        # --- Fetch Flights Per Day Chart Data ---
+        # --- Fetch Flights Per Day Chart Data (Existing) ---
         flights_cursor_var = cursor.var(cx_Oracle.CURSOR)
         cursor.callproc("SP_GetFlightsPerDay", [30, flights_cursor_var]) # Get next 30 days
         flights_cursor = flights_cursor_var.getvalue()
-        if flights_cursor:
-            flights_raw = flights_cursor.fetchall()
-            # Format for Chart.js
-            flights_chart_data["labels"] = [row[0].strftime('%Y-%m-%d') for row in flights_raw]
-            flights_chart_data["data"] = [row[1] for row in flights_raw]
-            flights_cursor.close()
+        flights_chart_data = format_chart_data(flights_cursor, date_format='%Y-%m-%d')
+        if flights_cursor: flights_cursor.close()
 
-        # --- Fetch Booking Status Chart Data ---
+        # --- Fetch Booking Status Chart Data (Existing) ---
         bookings_cursor_var = cursor.var(cx_Oracle.CURSOR)
         cursor.callproc("SP_GetBookingStatusDist", [bookings_cursor_var])
         bookings_cursor = bookings_cursor_var.getvalue()
-        if bookings_cursor:
-            bookings_raw = bookings_cursor.fetchall()
-            bookings_chart_data["labels"] = [row[0] for row in bookings_raw]
-            bookings_chart_data["data"] = [row[1] for row in bookings_raw]
-            bookings_cursor.close()
+        bookings_chart_data = format_chart_data(bookings_cursor)
+        if bookings_cursor: bookings_cursor.close()
 
-        # --- Fetch Aircraft Model Chart Data ---
+        # --- Fetch Aircraft Model Chart Data (Existing) ---
         aircraft_cursor_var = cursor.var(cx_Oracle.CURSOR)
         cursor.callproc("SP_GetAircraftModelDist", [aircraft_cursor_var])
         aircraft_cursor = aircraft_cursor_var.getvalue()
-        if aircraft_cursor:
-            aircraft_raw = aircraft_cursor.fetchall()
-            aircraft_chart_data["labels"] = [row[0] for row in aircraft_raw]
-            aircraft_chart_data["data"] = [row[1] for row in aircraft_raw]
-            aircraft_cursor.close()
+        aircraft_chart_data = format_chart_data(aircraft_cursor)
+        if aircraft_cursor: aircraft_cursor.close()
 
+        # --- NEW: Fetch Passenger Age Distribution Data ---
+        age_cursor_var = cursor.var(cx_Oracle.CURSOR)
+        cursor.callproc("SP_GetPassengerAgeDist", [age_cursor_var])
+        age_cursor = age_cursor_var.getvalue()
+        passenger_age_data = format_chart_data(age_cursor)
+        if age_cursor: age_cursor.close()
 
+        # --- NEW: Fetch Payment Status Distribution Data ---
+        payment_cursor_var = cursor.var(cx_Oracle.CURSOR)
+        cursor.callproc("SP_GetPaymentStatusDist", [payment_cursor_var])
+        payment_cursor = payment_cursor_var.getvalue()
+        payment_status_data = format_chart_data(payment_cursor)
+        if payment_cursor: payment_cursor.close()
+
+        # --- NEW: Fetch Crew Role Distribution Data ---
+        crew_cursor_var = cursor.var(cx_Oracle.CURSOR)
+        cursor.callproc("SP_GetCrewRoleDist", [crew_cursor_var])
+        crew_cursor = crew_cursor_var.getvalue()
+        crew_role_data = format_chart_data(crew_cursor)
+        if crew_cursor: crew_cursor.close()
+
+        # --- NEW: Fetch Bookings Trend Data ---
+        bookings_trend_cursor_var = cursor.var(cx_Oracle.CURSOR)
+        cursor.callproc("SP_GetBookingsTrend", [30, bookings_trend_cursor_var]) # 30 days trend
+        bookings_trend_cursor = bookings_trend_cursor_var.getvalue()
+        bookings_trend_data = format_chart_data(bookings_trend_cursor, date_format='%Y-%m-%d')
+        if bookings_trend_cursor: bookings_trend_cursor.close()
+
+        # --- NEW: Fetch Top Departing Airports Data ---
+        top_airports_cursor_var = cursor.var(cx_Oracle.CURSOR)
+        cursor.callproc("SP_GetTopDepartingAirports", [5, top_airports_cursor_var]) # Top 5
+        top_airports_cursor = top_airports_cursor_var.getvalue()
+        top_airports_data = format_chart_data(top_airports_cursor)
+        if top_airports_cursor: top_airports_cursor.close()
+
+        # --- NEW: Fetch Flights per Airport Data (Relationship Plot 1) ---
+        flights_per_airport_cursor_var = cursor.var(cx_Oracle.CURSOR)
+        # *** FIXED PROCEDURE NAME HERE ***
+        cursor.callproc("SP_GetFlightsPerAirport", [flights_per_airport_cursor_var])
+        flights_per_airport_cursor = flights_per_airport_cursor_var.getvalue()
+        # Limit to top N for better visualization if needed, e.g., top 15
+        temp_data = format_chart_data(flights_per_airport_cursor)
+        flights_per_airport_data = {"labels": temp_data["labels"][:15], "data": temp_data["data"][:15]}
+        if flights_per_airport_cursor: flights_per_airport_cursor.close()
+
+        # --- NEW: Fetch Avg Bookings vs Capacity Data (Relationship Plot 2) ---
+        bookings_capacity_cursor_var = cursor.var(cx_Oracle.CURSOR)
+        cursor.callproc("SP_GetAvgBookingsVsCapacity", [bookings_capacity_cursor_var])
+        bookings_capacity_cursor = bookings_capacity_cursor_var.getvalue()
+        bookings_capacity_data = format_scatter_data(bookings_capacity_cursor)
+        if bookings_capacity_cursor: bookings_capacity_cursor.close()
+
+    # *** ENSURE CORRECT INDENTATION FOR except, finally, and return ***
     except Exception as e:
         # Log error: print(f"Dashboard Error: {e}")
         error = f"Could not load dashboard data: {str(e)}"
-        # Reset data on error
+        # Reset all data on error
         for key in dashboard_data: dashboard_data[key] = "Error"
         flights_chart_data = {"labels": [], "data": []}
         bookings_chart_data = {"labels": [], "data": []}
         aircraft_chart_data = {"labels": [], "data": []}
+        # --- Reset new data structures on error ---
+        passenger_age_data = {"labels": [], "data": []}
+        payment_status_data = {"labels": [], "data": []}
+        crew_role_data = {"labels": [], "data": []}
+        bookings_trend_data = {"labels": [], "data": []}
+        top_airports_data = {"labels": [], "data": []}
+        flights_per_airport_data = {"labels": [], "data": []}
+        bookings_capacity_data = {"data": []}
 
     finally:
         if cursor:
@@ -109,14 +197,21 @@ def home():
         if conn:
             conn.close()
 
-    # Render index.html, passing the fetched data
+    # Render index.html, passing all fetched data
     return render_template('index.html',
                            dashboard_data=dashboard_data,
                            flights_chart_data=flights_chart_data,
                            bookings_chart_data=bookings_chart_data,
                            aircraft_chart_data=aircraft_chart_data,
+                           # --- Pass new plot data ---
+                           passenger_age_data=passenger_age_data,
+                           payment_status_data=payment_status_data,
+                           crew_role_data=crew_role_data,
+                           bookings_trend_data=bookings_trend_data,
+                           top_airports_data=top_airports_data,
+                           flights_per_airport_data=flights_per_airport_data,
+                           bookings_capacity_data=bookings_capacity_data,
                            error=error)
-
 
 # 1) PL/SQL Executor
 @app.route('/executor', methods=['GET', 'POST'])

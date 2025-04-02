@@ -8,7 +8,6 @@
       <div class="alert alert-danger">{{ error }}</div>
   {% endif %}
 
-  <!-- Stat Cards Row -->
   <div class="row mb-4 g-3">
     <div class="col-md col-sm-6">
       <div class="card text-center h-100 card-animated">
@@ -53,12 +52,11 @@
     </div>
   </div>
 
-  <!-- Charts Row -->
   <div class="row g-4">
     <div class="col-lg-7">
       <div class="card card-animated h-100" style="animation-delay: 0.5s;">
           <div class="card-header">Flights per Day (Next 30 Days)</div>
-          <div class="card-body" style="height: 400px;">  <!-- FIXED HEIGHT HERE -->
+          <div class="card-body" style="height: 400px;">
             <canvas id="flightsChart"></canvas>
           </div>
         </div>
@@ -69,17 +67,17 @@
                    <div class="card card-animated h-100" style="animation-delay: 0.6s;">
                      <div class="card-header">Booking Status</div>
                      <div class="card-body d-flex justify-content-center align-items-center">
-                          <div style="max-width: 300px; width: 100%;"> {# Limit pie chart size #}
+                          <div style="max-width: 300px; width: 100%;">
                                <canvas id="bookingsChart" style="height:300px;"></canvas>
                           </div>
                      </div>
                    </div>
               </div>
-              <div class="col-12">
+              <div class="col-12 mt-4"> {# Added margin top for spacing #}
                    <div class="card card-animated h-100" style="animation-delay: 0.7s;">
                      <div class="card-header">Aircraft Models</div>
                      <div class="card-body d-flex justify-content-center align-items-center">
-                          <div style="max-width: 300px; width: 100%;"> {# Limit pie chart size #}
+                          <div style="max-width: 300px; width: 100%;">
                               <canvas id="aircraftChart" style="height:300px;"></canvas>
                           </div>
                      </div>
@@ -89,118 +87,301 @@
     </div>
   </div>
 
+  <div class="row g-4 mt-4">
+      <div class="col-lg-6">
+          <div class="card card-animated h-100" style="animation-delay: 0.8s;">
+              <div class="card-header">Passenger Age Distribution</div>
+              <div class="card-body" style="height: 350px;">
+                  <canvas id="passengerAgeChart"></canvas> {# New ID #}
+              </div>
+          </div>
+      </div>
+      <div class="col-lg-6">
+          <div class="card card-animated h-100" style="animation-delay: 0.9s;">
+              <div class="card-header">Payment Status</div>
+              <div class="card-body d-flex justify-content-center align-items-center" style="height: 350px;">
+                   <div style="max-width: 300px; width: 100%;">
+                       <canvas id="paymentStatusChart"></canvas> {# New ID #}
+                   </div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <div class="row g-4 mt-4">
+       <div class="col-lg-4">
+            <div class="card card-animated h-100" style="animation-delay: 1.0s;">
+                <div class="card-header">Crew Roles</div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="height: 300px;">
+                    <div style="max-width: 250px; width: 100%;">
+                       <canvas id="crewRoleChart"></canvas> {# New ID #}
+                    </div>
+                </div>
+            </div>
+       </div>
+       <div class="col-lg-8">
+            <div class="card card-animated h-100" style="animation-delay: 1.1s;">
+                <div class="card-header">Bookings Created (Last 30 Days)</div>
+                <div class="card-body" style="height: 300px;">
+                    <canvas id="bookingsTrendChart"></canvas> {# New ID #}
+                </div>
+            </div>
+       </div>
+  </div>
+
+   <div class="row g-4 mt-4">
+       <div class="col-lg-6">
+            <div class="card card-animated h-100" style="animation-delay: 1.2s;">
+                <div class="card-header">Top 5 Departing Airports</div>
+                <div class="card-body" style="height: 350px;">
+                    <canvas id="topAirportsChart"></canvas> {# New ID #}
+                </div>
+            </div>
+       </div>
+       <div class="col-lg-6">
+            <div class="card card-animated h-100" style="animation-delay: 1.3s;">
+                <div class="card-header">Flights Per Airport (Departures)</div>
+                <div class="card-body" style="height: 350px;">
+                    <canvas id="flightsPerAirportChart"></canvas> {# New ID #}
+                </div>
+            </div>
+       </div>
+   </div>
+
+   <div class="row g-4 mt-4 mb-4"> {# Added mb-4 for bottom spacing #}
+       <div class="col-lg-12">
+            <div class="card card-animated h-100" style="animation-delay: 1.4s;">
+                <div class="card-header">Average Bookings vs. Aircraft Capacity</div>
+                <div class="card-body" style="height: 400px;">
+                    <canvas id="bookingsCapacityChart"></canvas> {# New ID #}
+                </div>
+            </div>
+       </div>
+   </div>
+
+
 </div> {# End container-fluid #}
 {% endblock %}
 
 {% block scripts %}
 {# Pass data safely from Flask to JavaScript using tojson #}
 <script>
-  const flightsChartData = {{ flights_chart_data|tojson }};
-  const bookingsChartData = {{ bookings_chart_data|tojson }};
-  const aircraftChartData = {{ aircraft_chart_data|tojson }};
+  // Existing data
+  const flightsChartData = {{ flights_chart_data|tojson|safe }};
+  const bookingsChartData = {{ bookings_chart_data|tojson|safe }};
+  const aircraftChartData = {{ aircraft_chart_data|tojson|safe }};
+
+  // --- NEW: Get data for new plots ---
+  const passengerAgeData = {{ passenger_age_data|tojson|safe }};
+  const paymentStatusData = {{ payment_status_data|tojson|safe }};
+  const crewRoleData = {{ crew_role_data|tojson|safe }};
+  const bookingsTrendData = {{ bookings_trend_data|tojson|safe }};
+  const topAirportsData = {{ top_airports_data|tojson|safe }};
+  const flightsPerAirportData = {{ flights_per_airport_data|tojson|safe }};
+  const bookingsCapacityData = {{ bookings_capacity_data|tojson|safe }}; // Scatter data format
+
+  // Utility for fallback text
+  function setFallbackText(canvasElement, message) {
+      if(canvasElement && canvasElement.parentNode) {
+          canvasElement.parentNode.innerHTML = `<p class="text-muted text-center p-3">${message}</p>`;
+      }
+  }
+
+  // Color utility if needed
+  const chartColors = [
+       'rgba(0, 82, 204, 0.7)',   // Primary Blue
+       'rgba(40, 167, 69, 0.7)',  // Success Green
+       'rgba(255, 193, 7, 0.7)',  // Warning Yellow
+       'rgba(23, 162, 184, 0.7)', // Info Cyan
+       'rgba(108, 117, 125, 0.7)',// Secondary Gray
+       'rgba(253, 126, 20, 0.7)', // Orange
+       'rgba(220, 53, 69, 0.7)',  // Danger Red
+       'rgba(102, 16, 242, 0.7)', // Indigo
+       'rgba(214, 51, 132, 0.7)' // Pink
+   ];
+
 
   document.addEventListener('DOMContentLoaded', function () {
-    // --- Flights Per Day Chart (Line) ---
+    // --- Flights Per Day Chart (Line - Existing) ---
     const ctxFlights = document.getElementById('flightsChart');
     if (ctxFlights && flightsChartData.labels.length > 0) {
       new Chart(ctxFlights, {
-        type: 'line',
-        data: {
-          labels: flightsChartData.labels,
-          datasets: [{
-            label: '# of Flights',
-            data: flightsChartData.data,
-            borderColor: 'rgb(0, 82, 204)', // Primary color
-            backgroundColor: 'rgba(0, 82, 204, 0.2)',
-            tension: 0.1,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-               ticks: { // Ensure only integers are shown on y-axis
-                  stepSize: 1,
-                  callback: function(value) {if (value % 1 === 0) {return value;}}
-              }
-            }
-          },
-          plugins: {
-               legend: { display: false } // Hide legend for single dataset
-          }
-        }
+        type: 'line', data: { labels: flightsChartData.labels, datasets: [{ label: '# of Flights', data: flightsChartData.data, borderColor: chartColors[0], backgroundColor: chartColors[0].replace('0.7', '0.2'), tension: 0.1, fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, callback: function(value) {if (value % 1 === 0) {return value;}} } } }, plugins: { legend: { display: false } } }
       });
-    } else if(ctxFlights) {
-        ctxFlights.parentNode.innerHTML = '<p class="text-muted text-center">No upcoming flight data available.</p>';
-    }
+    } else if(ctxFlights) { setFallbackText(ctxFlights, 'No upcoming flight data available.'); }
 
-    // --- Booking Status Chart (Doughnut) ---
+    // --- Booking Status Chart (Doughnut - Existing) ---
     const ctxBookings = document.getElementById('bookingsChart');
      if (ctxBookings && bookingsChartData.labels.length > 0) {
       new Chart(ctxBookings, {
-        type: 'doughnut',
-        data: {
-          labels: bookingsChartData.labels,
-          datasets: [{
-            label: 'Booking Status',
-            data: bookingsChartData.data,
-            backgroundColor: [ // Example colors - add more if you have many statuses
-              'rgba(40, 167, 69, 0.7)',  // Success (Confirmed)
-              'rgba(220, 53, 69, 0.7)',   // Danger (Cancelled)
-              'rgba(255, 193, 7, 0.7)',   // Warning (Pending)
-              'rgba(108, 117, 125, 0.7)' // Secondary (Other?)
-            ],
-            hoverOffset: 4
-          }]
-        },
-         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top' }
-            }
-         }
+        type: 'doughnut', data: { labels: bookingsChartData.labels, datasets: [{ label: 'Booking Status', data: bookingsChartData.data, backgroundColor: chartColors, hoverOffset: 4 }] },
+         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
       });
-     } else if(ctxBookings) {
-        ctxBookings.parentNode.innerHTML = '<p class="text-muted text-center">No booking status data available.</p>';
-     }
+     } else if(ctxBookings) { setFallbackText(ctxBookings, 'No booking status data available.'); }
 
-      // --- Aircraft Model Chart (Pie) ---
+    // --- Aircraft Model Chart (Pie - Existing) ---
      const ctxAircraft = document.getElementById('aircraftChart');
      if (ctxAircraft && aircraftChartData.labels.length > 0) {
       new Chart(ctxAircraft, {
-        type: 'pie',
-        data: {
-          labels: aircraftChartData.labels,
-          datasets: [{
-            label: 'Aircraft Models',
-            data: aircraftChartData.data,
-             // Add more colors as needed, Chart.js will cycle if necessary
-             backgroundColor: [
-                 'rgba(0, 82, 204, 0.7)',
-                 'rgba(40, 167, 69, 0.7)',
-                 'rgba(255, 193, 7, 0.7)',
-                 'rgba(23, 162, 184, 0.7)',
-                 'rgba(108, 117, 125, 0.7)',
-                 'rgba(253, 126, 20, 0.7)'
-             ],
-            hoverOffset: 4
-          }]
-        },
-         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top' }
-            }
-         }
+        type: 'pie', data: { labels: aircraftChartData.labels, datasets: [{ label: 'Aircraft Models', data: aircraftChartData.data, backgroundColor: chartColors, hoverOffset: 4 }] },
+         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
       });
-     } else if(ctxAircraft) {
-          ctxAircraft.parentNode.innerHTML = '<p class="text-muted text-center">No aircraft model data available.</p>';
-     }
+     } else if(ctxAircraft) { setFallbackText(ctxAircraft, 'No aircraft model data available.'); }
+
+
+     // --- NEW: Passenger Age Distribution (Bar) ---
+     const ctxPassengerAge = document.getElementById('passengerAgeChart');
+     if (ctxPassengerAge && passengerAgeData.labels.length > 0) {
+         new Chart(ctxPassengerAge, {
+             type: 'bar',
+             data: {
+                 labels: passengerAgeData.labels,
+                 datasets: [{
+                     label: 'Number of Passengers',
+                     data: passengerAgeData.data,
+                     backgroundColor: chartColors[1], // Green
+                     borderColor: chartColors[1].replace('0.7','1'),
+                     borderWidth: 1
+                 }]
+             },
+             options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', // Optional: make it horizontal bar
+                 scales: { x: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+         });
+     } else if(ctxPassengerAge) { setFallbackText(ctxPassengerAge, 'No passenger age data available.'); }
+
+     // --- NEW: Payment Status (Pie) ---
+     const ctxPaymentStatus = document.getElementById('paymentStatusChart');
+     if (ctxPaymentStatus && paymentStatusData.labels.length > 0) {
+         new Chart(ctxPaymentStatus, {
+             type: 'pie',
+             data: {
+                 labels: paymentStatusData.labels,
+                 datasets: [{
+                     label: 'Payment Status',
+                     data: paymentStatusData.data,
+                     backgroundColor: chartColors.slice(0, paymentStatusData.labels.length), // Use dynamic number of colors
+                     hoverOffset: 4
+                 }]
+             },
+             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+         });
+     } else if(ctxPaymentStatus) { setFallbackText(ctxPaymentStatus, 'No payment status data available.'); }
+
+     // --- NEW: Crew Roles (Doughnut) ---
+     const ctxCrewRole = document.getElementById('crewRoleChart');
+     if (ctxCrewRole && crewRoleData.labels.length > 0) {
+         new Chart(ctxCrewRole, {
+             type: 'doughnut',
+             data: {
+                 labels: crewRoleData.labels,
+                 datasets: [{
+                     label: 'Crew Roles',
+                     data: crewRoleData.data,
+                     backgroundColor: chartColors.slice(0, crewRoleData.labels.length),
+                     hoverOffset: 4
+                 }]
+             },
+             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+         });
+     } else if(ctxCrewRole) { setFallbackText(ctxCrewRole, 'No crew role data available.'); }
+
+     // --- NEW: Bookings Trend (Line) ---
+     const ctxBookingsTrend = document.getElementById('bookingsTrendChart');
+     if (ctxBookingsTrend && bookingsTrendData.labels.length > 0) {
+         new Chart(ctxBookingsTrend, {
+             type: 'line',
+             data: {
+                 labels: bookingsTrendData.labels,
+                 datasets: [{
+                     label: 'Bookings Created',
+                     data: bookingsTrendData.data,
+                     borderColor: chartColors[3], // Cyan
+                     backgroundColor: chartColors[3].replace('0.7','0.2'),
+                     tension: 0.1,
+                     fill: true
+                 }]
+             },
+             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+         });
+     } else if(ctxBookingsTrend) { setFallbackText(ctxBookingsTrend, 'No recent booking trend data available.'); }
+
+     // --- NEW: Top 5 Departing Airports (Bar) ---
+     const ctxTopAirports = document.getElementById('topAirportsChart');
+     if (ctxTopAirports && topAirportsData.labels.length > 0) {
+         new Chart(ctxTopAirports, {
+             type: 'bar',
+             data: {
+                 labels: topAirportsData.labels,
+                 datasets: [{
+                     label: 'Number of Departures',
+                     data: topAirportsData.data,
+                     backgroundColor: chartColors[5], // Orange
+                     borderColor: chartColors[5].replace('0.7','1'),
+                     borderWidth: 1
+                 }]
+             },
+             options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', // Horizontal makes airport names easier to read
+                scales: { x: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+         });
+     } else if(ctxTopAirports) { setFallbackText(ctxTopAirports, 'No top airport data available.'); }
+
+      // --- NEW: Flights Per Airport (Bar - Relationship Plot 1) ---
+     const ctxFlightsPerAirport = document.getElementById('flightsPerAirportChart');
+     if (ctxFlightsPerAirport && flightsPerAirportData.labels.length > 0) {
+         new Chart(ctxFlightsPerAirport, {
+             type: 'bar',
+             data: {
+                 labels: flightsPerAirportData.labels, // Already limited to top 15 in Python
+                 datasets: [{
+                     label: 'Number of Departures',
+                     data: flightsPerAirportData.data,
+                     backgroundColor: chartColors[8], // Pink
+                     borderColor: chartColors[8].replace('0.7','1'),
+                     borderWidth: 1
+                 }]
+             },
+             options: { responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } },
+                // Optional: Rotate x-axis labels if they overlap
+                 scales: {
+                    x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } },
+                    y: { beginAtZero: true }
+                 }
+             }
+         });
+     } else if(ctxFlightsPerAirport) { setFallbackText(ctxFlightsPerAirport, 'No flights per airport data available.'); }
+
+     // --- NEW: Average Bookings vs Capacity (Scatter - Relationship Plot 2) ---
+     const ctxBookingsCapacity = document.getElementById('bookingsCapacityChart');
+     if (ctxBookingsCapacity && bookingsCapacityData.data.length > 0) {
+          new Chart(ctxBookingsCapacity, {
+            type: 'scatter',
+            data: {
+              datasets: [{
+                label: 'Avg Bookings vs Capacity',
+                data: bookingsCapacityData.data, // Expects [{x: capacity, y: avg_bookings}, ...]
+                backgroundColor: chartColors[6] // Red
+              }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              scales: {
+                x: {
+                  type: 'linear', // Ensure x-axis is treated as numbers
+                  position: 'bottom',
+                  title: { display: true, text: 'Aircraft Capacity' },
+                  beginAtZero: true
+                },
+                y: {
+                  title: { display: true, text: 'Avg. Confirmed Bookings per Flight' },
+                   beginAtZero: true
+                }
+              },
+              plugins: { legend: { display: false } }
+            }
+          });
+     } else if(ctxBookingsCapacity) { setFallbackText(ctxBookingsCapacity, 'No bookings vs capacity data available.'); }
 
   });
 </script>
