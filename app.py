@@ -1,25 +1,41 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, json
 import cx_Oracle
 import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+# --- ADD TO A .ENV FILE ---
+# ORACLE_USERNAME = ""
+# ORACLE_PASSWORD = ""
+# ORACLE_HOST = ""
+# ORACLE_PORT = ""
+# ORACLE_SERVICE_NAME = ""
+# FLASK_SECRET_KEY=""
+# FLASK_DEBUG=True or False
+# --- ADD TO A .ENV FILE ---
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key"  # Replace with a secure key
-
-# Configure your Oracle connection parameters here
-ORACLE_USERNAME = "COMP214_W25_zor_90"
-ORACLE_PASSWORD = "password"
-# ORACLE_HOST = "oracle1.centennialcollege.ca"  # USAGE IN CENTENNIAL NETWORK
-ORACLE_HOST = "199.212.26.208"  # USAGE OUTSIDE CENTENNIAL NETWORK
-ORACLE_PORT = "1521"  # Default port for Oracle
-ORACLE_SERVICE_NAME = "SQLD"  # Example service name
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "default_key")
 
 def get_connection():
     """
     Returns a new connection using the cx_Oracle driver.
     Ensure Oracle Instant Client or a full Oracle client is installed.
     """
-    dsn_tns = cx_Oracle.makedsn(ORACLE_HOST, ORACLE_PORT, service_name=ORACLE_SERVICE_NAME)
-    connection = cx_Oracle.connect(user=ORACLE_USERNAME, password=ORACLE_PASSWORD, dsn=dsn_tns)
+    # Get credentials from environment variables
+    user = os.getenv("ORACLE_USERNAME")
+    pw = os.getenv("ORACLE_PASSWORD")
+    host = os.getenv("ORACLE_HOST")
+    port = os.getenv("ORACLE_PORT")
+    service = os.getenv("ORACLE_SERVICE_NAME")
+
+    # Optional: Add checks if variables are missing
+    if not all([user, pw, host, port, service]):
+         raise ValueError("Missing one or more Oracle connection environment variables (ORACLE_USERNAME, ORACLE_PASSWORD, ORACLE_HOST, ORACLE_PORT, ORACLE_SERVICE_NAME)")
+
+    dsn_tns = cx_Oracle.makedsn(host, port, service_name=service)
+    connection = cx_Oracle.connect(user=user, password=pw, dsn=dsn_tns)
     return connection
 
 def fetch_cursor_data(cursor):
@@ -985,4 +1001,5 @@ def search_bookings():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode)

@@ -917,3 +917,156 @@ BEGIN
         ORDER BY model_count DESC;
 END;
 /
+
+
+
+---------------------------------------------------------------------
+-- NEW PROCEDURE: Passenger Age Distribution
+---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE SP_GetPassengerAgeDist (
+    o_age_data OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN o_age_data FOR
+        SELECT
+            CASE
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 0 AND 17 THEN '0-17'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 18 AND 25 THEN '18-25'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 26 AND 40 THEN '26-40'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 41 AND 60 THEN '41-60'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) > 60 THEN '60+'
+                ELSE 'Unknown'
+            END AS age_group,
+            COUNT(*) AS passenger_count
+        FROM Passengers
+        WHERE date_of_birth IS NOT NULL
+        GROUP BY
+            CASE
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 0 AND 17 THEN '0-17'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 18 AND 25 THEN '18-25'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 26 AND 40 THEN '26-40'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) BETWEEN 41 AND 60 THEN '41-60'
+                WHEN TRUNC(MONTHS_BETWEEN(SYSDATE, date_of_birth) / 12) > 60 THEN '60+'
+                ELSE 'Unknown'
+            END
+        ORDER BY age_group;
+END;
+/
+
+---------------------------------------------------------------------
+-- NEW PROCEDURE: Payment Status Distribution
+---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE SP_GetPaymentStatusDist (
+    o_payment_status_data OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN o_payment_status_data FOR
+        SELECT payment_status, COUNT(*) as status_count
+        FROM Payments
+        GROUP BY payment_status;
+END;
+/
+
+---------------------------------------------------------------------
+-- NEW PROCEDURE: Crew Role Distribution
+---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE SP_GetCrewRoleDist (
+    o_crew_role_data OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN o_crew_role_data FOR
+        SELECT role, COUNT(*) as role_count
+        FROM Crew
+        GROUP BY role;
+END;
+/
+
+---------------------------------------------------------------------
+-- NEW PROCEDURE: Bookings Trend (Last 30 Days)
+---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE SP_GetBookingsTrend (
+    p_days IN NUMBER DEFAULT 30,
+    o_bookings_trend_data OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN o_bookings_trend_data FOR
+        SELECT TRUNC(booking_date) AS day, COUNT(*) AS booking_count
+        FROM Bookings
+        WHERE booking_date >= TRUNC(SYSDATE) - p_days
+          AND booking_date < TRUNC(SYSDATE) + 1 -- Include today up to now
+        GROUP BY TRUNC(booking_date)
+        ORDER BY day;
+END;
+/
+
+---------------------------------------------------------------------
+-- NEW PROCEDURE: Top Departing Airports (e.g., Top 5)
+---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE SP_GetTopDepartingAirports (
+    p_limit IN NUMBER DEFAULT 5,
+    o_top_airports_data OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+    OPEN o_top_airports_data FOR
+        SELECT ap.name AS airport_name, COUNT(f.flight_id) AS departure_count
+        FROM Flights f
+        JOIN Airports ap ON f.departure_airport_id = ap.airport_id
+        WHERE f.departure_time >= SYSDATE -- Consider only future/current flights or remove for all-time
+        GROUP BY ap.name
+        ORDER BY departure_count DESC
+        FETCH FIRST p_limit ROWS ONLY;
+END;
+/
+
+---------------------------------------------------------------------
+-- NEW PROCEDURE: Flights per Airport (Departure - Relationship Plot)
+---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE SP_GetFlightsPerAirport ( -- Renamed from SP_GetDepartingFlightsPerAirport
+     o_flights_per_airport_data OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+     OPEN o_flights_per_airport_data FOR
+          SELECT ap.name AS airport_name, COUNT(f.flight_id) AS departure_count
+          FROM Flights f
+          JOIN Airports ap ON f.departure_airport_id = ap.airport_id
+          -- WHERE f.departure_time >= SYSDATE -- Optional: Filter for future flights
+          GROUP BY ap.name
+          ORDER BY departure_count DESC;
+END;
+/
+
+---------------------------------------------------------------------
+-- NEW PROCEDURE: Average Bookings vs Aircraft Capacity (Relationship Plot)
+---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE SP_GetAvgBookingsVsCapacity (
+     o_bookings_capacity_data OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+     OPEN o_bookings_capacity_data FOR
+          SELECT
+               a.capacity,
+               -- Calculate Avg Bookings per Flight for this capacity
+               -- Need to count distinct flights for a capacity, then total bookings, then divide
+               -- This is a simplified version assuming direct average calculation is sufficient for visualization
+               -- A more precise calculation might involve subqueries
+               AVG(NVL(b_counts.confirmed_bookings, 0)) AS avg_confirmed_bookings
+          FROM Aircraft a
+          LEFT JOIN Flights f ON a.aircraft_id = f.aircraft_id
+          LEFT JOIN (
+               SELECT flight_id, COUNT(*) AS confirmed_bookings
+               FROM Bookings
+               WHERE booking_status = 'Confirmed'
+               GROUP BY flight_id
+          ) b_counts ON f.flight_id = b_counts.flight_id
+          WHERE a.capacity IS NOT NULL AND a.capacity > 0 -- Filter out invalid capacities
+          GROUP BY a.capacity
+          ORDER BY a.capacity;
+END;
+/
